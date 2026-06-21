@@ -10,7 +10,6 @@ st.title("🎟️ Ticket Sales Statistics Dashboard")
 st.markdown("Interact with the filters below to explore real-time sales data.")
 
 # --- 1. LOAD DATA ---
-# Replace this with your actual data loading logic (e.g., pd.read_csv("your_data.csv"))
 @st.cache_data
 def load_data():
     np.random.seed(42)
@@ -18,7 +17,6 @@ def load_data():
     
     data = []
     for date in dates:
-        # Simulate General Admission and VIP sales
         data.append({"Date": date, "Ticket Type": "General Admission", "Quantity": np.random.randint(10, 50), "Price": 50})
         data.append({"Date": date, "Ticket Type": "VIP", "Quantity": np.random.randint(2, 12), "Price": 150})
         
@@ -28,19 +26,16 @@ def load_data():
 
 df = load_data()
 
-# --- 2. SIDEBAR FILTERS (Interactivity) ---
+# --- 2. SIDEBAR FILTERS ---
 st.sidebar.header("Filter Options")
 
-# Ticket Type Filter
 ticket_types = df["Ticket Type"].unique()
 selected_types = st.sidebar.multiselect("Select Ticket Type:", options=ticket_types, default=ticket_types)
 
-# Date Filter
 min_date = df["Date"].min().to_pydatetime()
 max_date = df["Date"].max().to_pydatetime()
 selected_dates = st.sidebar.slider("Select Date Range:", min_value=min_date, max_value=max_date, value=(min_date, max_date))
 
-# Filter the dataframe based on user input
 filtered_df = df[
     (df["Ticket Type"].isin(selected_types)) & 
     (df["Date"] >= selected_dates[0]) & 
@@ -62,23 +57,24 @@ with col3:
 
 st.markdown("---")
 
-# --- 4. INTERACTIVE CHARTS ---
+# --- 4. INTERACTIVE CHARTS (Updated Syntax) ---
 chart_col1, chart_col2 = st.columns(2)
 
 with chart_col1:
     st.subheader("Sales Trends Over Time")
-    # Group data by date for the line chart
     time_df = filtered_df.groupby("Date")["Quantity"].sum().reset_index()
     fig_line = px.line(time_df, x="Date", y="Quantity", labels={"Quantity": "Tickets Sold"}, markers=True)
-    st.plotly_chart(fig_line, use_container_width=True)
+    # Updated parameter here
+    st.plotly_chart(fig_line, width="stretch")
 
 with chart_col2:
     st.subheader("Revenue by Ticket Type")
-    # Group data by ticket type for the pie chart
     type_df = filtered_df.groupby("Ticket Type")["Revenue"].sum().reset_index()
     fig_pie = px.pie(type_df, values="Revenue", names="Ticket Type", hole=0.4)
-    st.plotly_chart(fig_pie, use_container_width=True)
+    # Updated parameter here
+    st.plotly_chart(fig_pie, width="stretch")
 
-# --- 5. DATA TABLE ---
+# --- 5. DATA TABLE (Updated Syntax) ---
 st.subheader("Raw Data View")
-st.dataframe(filtered_df, use_container_width=True)
+# Updated parameter here
+st.dataframe(filtered_df, width="stretch")
