@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import numpy as np
+import json
+import os
 
 # Set page config to wide mode for a better dashboard layout
 st.set_page_config(page_title="Ticket Sales Dashboard", layout="wide")
@@ -24,7 +26,26 @@ def load_data():
     df["Revenue"] = df["Quantity"] * df["Price"]
     return df
 
-df = load_data()
+
+
+st.set_page_config(page_title="Local Event Ledger", layout="wide")
+st.title("🎟️ Local Ticket Operations Command")
+
+DATA_FILE = "live_tickets.json"
+
+def load_local_data():
+    # If the scraper hasn't run yet, return an empty dataframe
+    if not os.path.exists(DATA_FILE):
+        return pd.DataFrame()
+        
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        raw_json_list = json.load(f)
+        
+    # Instantly flatten original JSON keys (full_name, total_amount_charged, etc.)
+    return pd.DataFrame(raw_json_list)
+
+df = load_local_data()
+#df = load_data()
 
 # --- 2. SIDEBAR FILTERS ---
 st.sidebar.header("Filter Options")
