@@ -3,20 +3,8 @@ import json
 import requests
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
-import supabase
-import os
 from dotenv import load_dotenv
 import pandas as pd
-from supabase import create_client, Client # Make sure create_client is imported
-
-load_dotenv()
-
-SUPABASE_URL = os.environ.get("SUPABASE_URL").rstrip("/")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-
-# Create the ACTUAL client instance variable here
-#supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
 
 # Load variables from the local .env file
 load_dotenv()
@@ -37,7 +25,7 @@ def get_authenticated_session():
     session = requests.Session()
     
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
         context = browser.new_context()
         page = context.new_page()
         
@@ -47,9 +35,6 @@ def get_authenticated_session():
         # Fill out login credentials
         page.fill('input[type="email"]', LOGIN_EMAIL);
         page.fill('input[type="password"]', LOGIN_PASSWORD);
-        #2. Click the button using flexible, text-based matching. // This looks for ANY button or element that says "Log In" or "Sign In" console.log('Clicking the sign-in button...'); 
-        #page.locator('button:has-text("Sign in"), input[type="submit"]').first().click(); 
-        #page.click("button[type='submit']")
         page.locator('button:has-text("Sign in"), input[type="submit"]').first.click()
 
         #Wait for login redirection to finish
@@ -101,17 +86,9 @@ def automated_data_extraction():
         # Base Columns
         ('export_columns[]', 'holder_first_name'),
         ('export_columns[]', 'holder_last_name'),
-        ('export_columns[]', 'holder_email'),
         ('export_columns[]', 'tags'),
         ('export_columns[]', 'first_name'),
         ('export_columns[]', 'last_name'),
-        ('export_columns[]', 'email'),
-        ('export_columns[]', 'billing_street'),
-        ('export_columns[]', 'billing_line2'),
-        ('export_columns[]', 'billing_city'),
-        ('export_columns[]', 'billing_state'),
-        ('export_columns[]', 'billing_zip'),
-        ('export_columns[]', 'billing_country'),
         ('export_columns[]', 'payment_source'),
         ('export_columns[]', 'order_id'),
         ('export_columns[]', 'ticket_name'),
