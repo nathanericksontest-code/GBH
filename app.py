@@ -328,11 +328,11 @@ else:
 
                 try:
                     parsed_end_time = pd.to_datetime(shift_end_str, format="%H:%M", errors='coerce').time()
-                    print(parsed_end_time)
+                    #print(parsed_end_time)
                     if pd.isna(parsed_end_time): parsed_end_time = datetime.time(23, 59)
                 except:
                     parsed_end_time = datetime.time(23, 59)
-                    print(bag_number)
+                    #print(bag_number)
 
                 bag_shift_datetime_start = datetime.datetime.combine(target_calendar_date, parsed_start_time)
                 bag_shift_datetime_end = datetime.datetime.combine(target_calendar_date, parsed_end_time)
