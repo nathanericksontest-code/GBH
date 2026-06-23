@@ -84,6 +84,19 @@ def load_excel_inventory():
         st.error(f"Error reading inventory layout from {EXCEL_INVENTORY_FILE}: {e}")
         return pd.DataFrame()
 
+# Helper function for categorizing tickets globally
+def categorized_label(name):
+    name_lower = str(name).lower()
+    if "all access" in name_lower or "all-access" in name_lower or "staff" in name_lower or "volunteer" in name_lower:
+        return "Staff & All-Access Credentials"
+    elif "camping" in name_lower or "lot" in name_lower or "sticker" in name_lower:
+        return "Camping, Lots & Vehicles"
+    elif "weekend" in name_lower:
+        return "Standard Weekend Passes"
+    elif "single" in name_lower or "only" in name_lower or "friday" in name_lower or "saturday" in name_lower or "sunday" in name_lower:
+        return "Single-Day Base Tickets"
+    return "Other / Upcharges / Meals"
+
 df_raw = load_local_data()
 df_excel_registry = load_excel_inventory()
 
@@ -91,6 +104,8 @@ if df_raw.empty:
     st.info("Waiting for 'live_tickets.json' to be populated with transaction entries...")
 else:
     df_raw["Check-in by"] = df_raw["Check-in by"].fillna("Not Checked In")
+    # Pre-calculate category groups directly onto the master dataset
+    df_raw["Broad Category Group"] = df_raw["Ticket name"].apply(categorized_label)
 
     # --- SIDEBAR NAVIGATION ---
     st.sidebar.title("Navigation Dashboard")
@@ -104,18 +119,34 @@ else:
     # UNIFIED GLOBAL FILTER PANEL 
     # =========================================================================
     with st.expander("🛠️ Global Dashboard Filter Settings", expanded=True):
-        f_col1, f_col2, f_col3 = st.columns([1.5, 1.5, 2])
+        f_col1, f_col2, f_col3 = st.columns([2, 1.5, 2])
         
         with f_col1:
-            st.markdown("#### Ticket Types")
-            all_tickets = sorted(df_raw["Ticket name"].dropna().unique().tolist())
+            st.markdown("#### Ticket Clustering & Selection")
+            
+            # Choose filter methodology upfront
+            filter_mode = st.radio(
+                "Filter Hierarchy Mode:",
+                ["Broad Category Groups (Clean Summary)", "Individual Names (Detailed)"],
+                horizontal=True,
+                key="global_filter_mode"
+            )
+            
             t_action = st.radio("Ticket Shortcuts:", ["Select All", "Deselect All"], horizontal=True, key="t_shortcut")
             
             st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-            selected_tickets = []
-            for i, ticket in enumerate(all_tickets):
-                if st.checkbox(ticket, value=(t_action == "Select All"), key=f"t_g_{i}"):
-                    selected_tickets.append(ticket)
+            selected_items = []
+            
+            if filter_mode == "Broad Category Groups (Clean Summary)":
+                unique_categories = sorted(df_raw["Broad Category Group"].unique().tolist())
+                for i, cat in enumerate(unique_categories):
+                    if st.checkbox(cat, value=(t_action == "Select All"), key=f"cat_g_{i}"):
+                        selected_items.append(cat)
+            else:
+                all_tickets = sorted(df_raw["Ticket name"].dropna().unique().tolist())
+                for i, ticket in enumerate(all_tickets):
+                    if st.checkbox(ticket, value=(t_action == "Select All"), key=f"t_g_{i}"):
+                        selected_items.append(ticket)
             st.markdown('</div>', unsafe_allow_html=True)
             
         with f_col2:
@@ -153,9 +184,14 @@ else:
                 format="MM/DD HH:mm"
             )
 
-    # Apply Filters to the active live streaming ticket logs
+    # Apply Target Matrix Filtering Rules safely based on selected mode
+    if filter_mode == "Broad Category Groups (Clean Summary)":
+        ticket_mask = df_raw["Broad Category Group"].isin(selected_items)
+    else:
+        ticket_mask = df_raw["Ticket name"].isin(selected_items)
+
     filtered_df = df_raw[
-        (df_raw["Ticket name"].isin(selected_tickets)) & 
+        ticket_mask & 
         (df_raw["Check-in by"].isin(selected_agents)) & 
         (df_raw["Check-in time_parsed"] >= start_filter) & 
         (df_raw["Check-in time_parsed"] <= end_filter)
@@ -184,7 +220,7 @@ else:
         st.subheader("Live Operational Records View")
         col1, col2 = st.columns(2)
         with col1:
-            sort_choice = st.selectbox("Primary Sort Column", options=["Check-in time", "Check-in by", "Ticket name", "ID"])
+            sort_choice = st.selectbox("Primary Sort Column", options=["Check-in time", "Check-in by", "Ticket name", "Broad Category Group", "ID"])
         with col2:
             sort_order = st.radio("Direction", options=["Ascending ⬆️", "Descending ⬇️"], horizontal=True)
         
@@ -194,7 +230,7 @@ else:
         else:
             filtered_df = filtered_df.sort_values(by=sort_choice, ascending=is_ascending)
             
-        display_cols = ["ID", "Order ID", "Confirmation code", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Check-in time", "Check-in by"]
+        display_cols = ["ID", "Order ID", "Confirmation code", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by"]
         available_display_cols = [c for c in display_cols if c in filtered_df.columns]
         st.dataframe(filtered_df[available_display_cols], use_container_width=True, hide_index=True)
 
@@ -207,27 +243,13 @@ else:
         if chart_data.empty:
             st.warning("No data matches the selected timeframe bounds or global filter criteria.")
         else:
-            c1, c2 = st.columns(2)
+            c1 = st.columns(1)[0]
             with c1:
                 time_bucket = st.selectbox("Timeline Interval Resolution:", options=["15 Minutes", "30 Minutes", "1 Hour", "Raw Cumulative Total"], index=1)
-            with c2:
-                grouping_mode = st.radio("Color Classification Mode:", options=["Individual Names (Detailed)", "Broad Category Groups (Clean Summary)"], horizontal=True)
-
-            def categorized_label(name):
-                name_lower = str(name).lower()
-                if "all access" in name_lower or "all-access" in name_lower or "staff" in name_lower or "volunteer" in name_lower:
-                    return "Staff & All-Access Credentials"
-                elif "camping" in name_lower or "lot" in name_lower or "sticker" in name_lower:
-                    return "Camping, Lots & Vehicles"
-                elif "weekend" in name_lower:
-                    return "Standard Weekend Passes"
-                elif "single" in name_lower or "only" in name_lower or "friday" in name_lower or "saturday" in name_lower or "sunday" in name_lower:
-                    return "Single-Day Base Tickets"
-                return "Other / Upcharges / Meals"
-
-            if grouping_mode == "Broad Category Groups (Clean Summary)":
-                chart_data["Chart Segment Group"] = chart_data["Ticket name"].apply(categorized_label)
-                color_target = "Chart Segment Group"
+            
+            # Inherit visual target color classification directly from the Global filter selection mode
+            if filter_mode == "Broad Category Groups (Clean Summary)":
+                color_target = "Broad Category Group"
             else:
                 color_target = "Ticket name"
 
@@ -245,7 +267,7 @@ else:
             st.plotly_chart(fig, use_container_width=True)
 
     # =========================================================================
-    # PAGE 3: PER-BAG INVENTORY AUDIT (MILITARY TIME & INLINE STYLING RENDERING)
+    # PAGE 3: PER-BAG INVENTORY AUDIT
     # =========================================================================
     elif page_selection == "🎒 Per-Bag Inventory Audit":
         st.subheader("Global Filter-Bound Performance Reconciliation Ledger")
@@ -263,7 +285,7 @@ else:
             metadata_columns = [bag_label, gate_label, name_label, start_time_label, end_time_label, day_label, "Shift"]
             ticket_item_columns = [col for col in df_excel_registry.columns if col not in metadata_columns]
 
-            checked_in_only = df_raw[df_raw["Status"] == "Checked In"].copy()
+            checked_in_only = filtered_df[filtered_df["Status"] == "Checked In"].copy()
             if not checked_in_only.empty:
                 checked_in_only["Agent_Lower"] = checked_in_only["Check-in by"].str.lower().str.strip()
                 checked_in_only["Ticket_Lower"] = checked_in_only["Ticket name"].str.lower().str.strip()
@@ -279,7 +301,6 @@ else:
                 shift_start_str = str(row.get(start_time_label, "")).strip()
                 shift_end_str = str(row.get(end_time_label, "")).strip()
                 
-                # --- CALCULATE EXPLICIT CALENDAR DATE MAP FROM CONFIG ---
                 if day_assigned_str in DAY_TO_DATE_MAPPING:
                     target_calendar_date = pd.to_datetime(DAY_TO_DATE_MAPPING[day_assigned_str]).date()
                 else:
@@ -293,37 +314,38 @@ else:
                         else:
                             target_calendar_date = datetime.date(2025, 7, 5)
 
-                # Parse raw string format assumptions down to strict Military 24h intervals (%H:%M)
+                bag_number = str(row.get(bag_label, "N/A"))
+                gate_assigned = str(row.get(gate_label, "N/A"))
+                day_assigned = str(row.get(day_label, ""))
+                staff_name = str(row.get(name_label, "N/A"))
+
                 try:
                     parsed_start_time = pd.to_datetime(shift_start_str, format="%H:%M", errors='coerce').time()
                     if pd.isna(parsed_start_time): parsed_start_time = datetime.time(0, 0)
                 except:
                     parsed_start_time = datetime.time(0, 0)
+                    print(bag_number)
 
                 try:
                     parsed_end_time = pd.to_datetime(shift_end_str, format="%H:%M", errors='coerce').time()
+                    print(parsed_end_time)
                     if pd.isna(parsed_end_time): parsed_end_time = datetime.time(23, 59)
                 except:
                     parsed_end_time = datetime.time(23, 59)
+                    print(bag_number)
 
                 bag_shift_datetime_start = datetime.datetime.combine(target_calendar_date, parsed_start_time)
                 bag_shift_datetime_end = datetime.datetime.combine(target_calendar_date, parsed_end_time)
 
-                # Carry automatically into the next calendar day if military end digits drop below start digits
                 if bag_shift_datetime_end < bag_shift_datetime_start:
                     bag_shift_datetime_end += datetime.timedelta(days=1)
 
-                # Drop bags completely out of selection range
                 if (bag_shift_datetime_end < start_filter) or (bag_shift_datetime_start > end_filter):
                     continue
 
-                # Intersection evaluation
                 is_fully_within = (bag_shift_datetime_start >= start_filter) and (bag_shift_datetime_end <= end_filter)
 
-                bag_number = str(row.get(bag_label, "N/A"))
-                gate_assigned = str(row.get(gate_label, "N/A"))
-                day_assigned = str(row.get(day_label, ""))
-                staff_name = str(row.get(name_label, "N/A"))
+
                 
                 bag_total_initial_qty = 0
                 bag_total_scans = 0
@@ -358,7 +380,7 @@ else:
                     "Initial Pre-Pack Qty": bag_total_initial_qty,
                     "Total Scanned Counts": bag_total_scans,
                     "Differential Variance (+ / -)": differential,
-                    "_is_fully_within": is_fully_within  # Hidden tracking variable for row styler function logic
+                    "_is_fully_within": is_fully_within 
                 })
 
             if consolidated_bags:
@@ -369,19 +391,16 @@ else:
                     "Assigned Attendant", "Initial Pre-Pack Qty", "Total Scanned Counts", "Differential Variance (+ / -)", "_is_fully_within"
                 ])
             
-            # --- PANDAS DYNAMIC ROW BACKGROUND HIGHLIGHTER ENGINE ---
             def highlight_shift_window(row):
                 styles = [''] * len(row)
                 if not row["_is_fully_within"]:
-                    # Find index offset corresponding to the visual column
                     try:
                         idx = row.index.get_loc("Shift Window")
-                        styles[idx] = "background-color: #fef08a; color: #854d0e; font-weight: bold;" # Clean muted alert yellow background style
+                        styles[idx] = "background-color: #fef08a; color: #854d0e; font-weight: bold;"
                     except:
                         pass
                 return styles
 
-            # Render styled canvas object
             styled_master_df = df_consolidated_master.style.apply(highlight_shift_window, axis=1)
 
             st.markdown(f"### 📋 Reconciled Bag Audit Ledger ({len(df_consolidated_master)} Active Shifts In Selected Range)")
@@ -389,5 +408,5 @@ else:
                 styled_master_df,
                 use_container_width=True,
                 hide_index=True,
-                column_config={"_is_fully_within": None} # Completely mask structural tracking column from interface view
+                column_config={"_is_fully_within": None}
             )
