@@ -219,7 +219,8 @@ else:
             st.markdown("#### 🔍 Step 1: Select Record to Modify")
             all_bags_list = sorted(df_excel_registry[bag_label].dropna().unique().tolist())
             selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list)
-            
+            counter_name = st.text_input("Counter:", value=str("Please fill in"))
+
             # Fetch target row data
             row_data = df_excel_registry[df_excel_registry[bag_label] == selected_bag_to_edit].iloc[0]
             
@@ -227,20 +228,20 @@ else:
             st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
             
             with st.form("zapier_modifier_form"):
-                c_meta1, c_meta2, c_meta3 = st.columns(3)
+                c_meta1, c_meta2 = st.columns(2)
                 with c_meta1:
-                    updated_gate = st.text_input("Gate Location:", value=str(row_data.get("Gate", "N/A")))
-                    updated_name = st.text_input("Assigned Staff Member:", value=str(row_data.get("Name", "N/A")))
+                #     updated_gate = st.text_input("Gate Location:", value=str(row_data.get("Gate", "N/A")))
+                     updated_name = st.text_input("Assigned Staff Member:", value=str(row_data.get("Name", "Please fill in")))
                 with c_meta2:
-                    updated_start = st.text_input("Shift Start (HH:MM):", value=str(row_data.get("Shift Start", "00:00")))
-                    updated_end = st.text_input("Shift End (HH:MM):", value=str(row_data.get("Shift End", "23:59")))
-                with c_meta3:
-                    updated_day = st.text_input("Day Code Assignment:", value=str(row_data.get("Day", "saturday")))
-                    updated_shift_code = st.text_input("Shift Code ID:", value=str(row_data.get("Shift", "AM")))
+                #     updated_start = st.text_input("Shift Start (HH:MM):", value=str(row_data.get("Shift Start", "00:00")))
+                #     updated_end = st.text_input("Shift End (HH:MM):", value=str(row_data.get("Shift End", "23:59")))
+                #with c_meta3:
+                #     updated_day = st.text_input("Day Code Assignment:", value=str(row_data.get("Day", "saturday")))
+                     notes = st.text_input("Notes", value=str(""))
                 
                 st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
                 
-                meta_cols = [bag_label, "Gate", "Name", "Shift Start", "Shift End", "Day", "Shift"]
+                meta_cols = [bag_label, "Name", "Notes","Date","Day","Shift Start","Shift End","Gate"]
                 meta_cols_existing = [c for c in meta_cols if c in df_excel_registry.columns]
                 ticket_cols = [col for col in df_excel_registry.columns if col not in meta_cols_existing]
                 
@@ -260,12 +261,9 @@ else:
                 # Build payload payload explicitly so Zapier receives flat text key pairs
                 payload = {
                     "bag_number": str(selected_bag_to_edit),
-                    "gate": updated_gate,
                     "name": updated_name,
-                    "shift_start": updated_start,
-                    "shift_end": updated_end,
-                    "day": updated_day,
-                    "shift_code": updated_shift_code,
+                    "counter": counter_name,
+                    "notes": notes,
                 }
                 # Merge dynamic numbers directly into payload root
                 for ticket_name, qty in ticket_inputs.items():
@@ -273,6 +271,7 @@ else:
 
                 with st.spinner("Firing webhook to Zapier..."):
                     try:
+                        print(payload)
                         ZAPIER_HOOK_URL = "https://hooks.zapier.com/hooks/catch/28076615/42ath8o/"
                         response = requests.post(ZAPIER_HOOK_URL, json=payload)
                         
