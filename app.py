@@ -41,13 +41,9 @@ load_dotenv()
 GOOGLE_SHEET_COUNTER_URL = os.environ.get("GOOGLE_SHEET_COUNTER_URL")
 GOOGLE_SHEET_PREPACK_URL = os.environ.get("GOOGLE_SHEET_PREPACK_URL")
 APP_PASSWORD = os.environ.get("APP_PASSWORD")
-
-DAY_TO_DATE_MAPPING = {
-    "thursday": "2025-07-03",
-    "friday": "2025-07-04",
-    "saturday": "2025-07-05",  
-    "sunday": "2025-07-06"
-}
+raw_columns = os.environ.get("TICKET_COLUMNS")
+TICKET_COLUMNS = json.loads(raw_columns)
+DAY_TO_DATE_MAPPING = os.environ.get("DAY_TO_DATE_MAPPING")
 
 
 @st.cache_data(ttl=10)
@@ -96,7 +92,7 @@ df_raw = load_local_data()
 st.sidebar.title("Navigation Dashboard")
 page_selection = st.sidebar.radio(
     "Go to view:", 
-    ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Edit Shift Allocations", "📝 TEST"]
+    ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
 )
 st.sidebar.markdown("---")
 
@@ -104,10 +100,10 @@ st.sidebar.markdown("---")
 # 🔒 PASSWORD PROTECTION GATE (Applies to all pages)
 # =========================================================================
 is_authenticated = False
-#if page_selection in ["🎒 Per-Bag Inventory Audit", "📝 Edit Shift Allocations"]:
+#if page_selection in ["🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out"]:
 st.sidebar.subheader("🔒 Authentication Required")
 user_password = st.sidebar.text_input("Enter Inventory Access Password:", type="password")
-if True:# FIXXX user_password == APP_PASSWORD:
+if user_password == APP_PASSWORD:
     st.sidebar.success("Access Granted!")
     is_authenticated = True
 else:
@@ -115,8 +111,8 @@ else:
     is_authenticated = False
 
 # Fetch fresh copy from the cloud if authenticated
-any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Edit Shift Allocations", "📝 TEST"]
-if is_authenticated and page_selection in ["🎒 Per-Bag Inventory Audit", "📝 Edit Shift Allocations","📝 TEST"]:
+any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
+if is_authenticated and page_selection in ["🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out","📝 TEST"]:
     df_excel_registry = load_google_sheet_inventory(GOOGLE_SHEET_PREPACK_URL)
     df_excel_counted = load_google_sheet_inventory(GOOGLE_SHEET_COUNTER_URL)
 else:
@@ -169,7 +165,6 @@ else:
             with f_col2:
                 st.markdown("#### Check-in Agents / Staff")
                 all_agents = sorted(df_raw["Check-in by"].unique().tolist())
-                print(all_agents)
                 a_action = st.radio("Agent Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
                 st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
                 selected_agents = [] # Make sure this list is initialized right before the loop
@@ -193,25 +188,25 @@ else:
                         selected_status.append(status_type)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-                st.markdown("#### Global Datetime Bounds")
-                valid_times = df_raw["Check-in time_parsed"].dropna()
-                min_time = valid_times.min().replace(second=0, microsecond=0).to_pydatetime() if not valid_times.empty else pd.to_datetime("2026-01-01 00:00:00").to_pydatetime()
-                max_time = valid_times.max().replace(second=0, microsecond=0).to_pydatetime() if not valid_times.empty else pd.to_datetime("2026-12-31 23:59:00").to_pydatetime()
-                if min_time == max_time: max_time += datetime.timedelta(minutes=1)
-                start_filter, end_filter = st.slider("Operational window:", min_value=min_time, max_value=max_time, value=(min_time, max_time), format="MM/DD HH:mm")
+                #st.markdown("#### Global Datetime Bounds")
+                #valid_times = df_raw["Check-in time_parsed"].dropna()
+                #min_time = valid_times.min().replace(second=0, microsecond=0).to_pydatetime() if not valid_times.empty else pd.to_datetime("2025-01-01 00:00:00").to_pydatetime()
+                #max_time = valid_times.max().replace(second=0, microsecond=0).to_pydatetime() if not valid_times.empty else pd.to_datetime("2026-12-31 23:59:00").to_pydatetime()
+                #if min_time == max_time: max_time += datetime.timedelta(minutes=1)
+                #start_filter, end_filter = st.slider("Operational window:", min_value=min_time, max_value=max_time, value=(min_time, max_time), format="MM/DD HH:mm")
 
-        ticket_mask = df_raw["Broad Category Group"].isin(selected_items) if filter_mode == "Broad Category Groups (Clean Summary)" else df_raw["Ticket name"].isin(selected_items)
-        filtered_df = df_raw[ticket_mask & (df_raw["Check-in by"].isin(selected_agents)) & (df_raw["Status"].isin(selected_status))& (df_raw["Check-in time_parsed"] >= start_filter) & (df_raw["Check-in time_parsed"] <= end_filter)].copy()
-
-        total_rows = len(df_raw)
-        status_count = (df_raw["Status"].isin(selected_status)).sum()
-        filtered_rows = len(filtered_df)
-        st.markdown("### Operational KPIs")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Total Records", f"{total_rows:,}")
-        m2.metric("Total In Status", f"{status_count:,}")
-        m3.metric("Total Filtered", f"{filtered_rows:,}")
-        st.markdown("---")
+            ticket_mask = df_raw["Broad Category Group"].isin(selected_items) if filter_mode == "Broad Category Groups (Clean Summary)" else df_raw["Ticket name"].isin(selected_items)
+            filtered_df = df_raw[ticket_mask & (df_raw["Check-in by"].isin(selected_agents)) & (df_raw["Status"].isin(selected_status))].copy() #& (df_raw["Check-in time_parsed"] >= start_filter) & (df_raw["Check-in time_parsed"] <= end_filter)
+            
+            total_count = len(df_raw)
+            status_count = (df_raw["Status"].isin(selected_status)).sum()
+            filtered_count = len(filtered_df)
+            st.markdown("### Operational KPIs")
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Total Records", f"{total_count:,}")
+            m2.metric("Total In Status", f"{status_count:,}")
+            m3.metric("Total Filtered", f"{filtered_count:,}")
+            st.markdown("---")
 
     # =========================================================================
     # RENDER SELECTED PAGE SWITCH BLOCKS
@@ -236,8 +231,8 @@ else:
                 
             display_cols = ["ID", "Order ID", "Confirmation code", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by"]
             available_display_cols = [c for c in display_cols if c in filtered_df.columns]
-            st.dataframe(filtered_df[available_display_cols], use_container_width=True, hide_index=True)
-            #st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+            st.dataframe(filtered_df[available_display_cols], width='stretch', hide_index=True)
+            #st.dataframe(filtered_df, width='stretch', hide_index=True)
             # (...Keep original Page 1 Ledger layout code intact...)
 
 
@@ -271,11 +266,11 @@ else:
                     chart_data["Total Scans Over Time"] = range(1, len(chart_data) + 1)
                     fig = px.line(chart_data, x="Check-in time_parsed", y="Total Scans Over Time", color=color_target, height=600, color_discrete_sequence=px.colors.qualitative.Bold)
                 fig.update_layout(hovermode="x unified", plot_bgcolor="white")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
 
     elif page_selection == "🎒 Per-Bag Inventory Audit":
-        st.subheader("Global Filter-Bound Performance Reconciliation Ledger")
+
         if not is_authenticated:
             st.warning("🔒 Access Denied. Input the correct password in the sidebar.")
         elif df_excel_registry.empty:
@@ -287,28 +282,101 @@ else:
 
             filt_bags = sorted(df_excel_registry["Bag Number"].unique().tolist())
 
-            st.markdown("#### Filter Bag Number")
-            all_bags = sorted(df_excel_registry["Bag Number"].unique().tolist())
-            b_action = st.radio("Bag Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
-            st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-            selected_bags = [] # Make sure this list is initialized right before the loop
-            for j, bag in enumerate(all_bags):
-               # ⭐ THE TWEAK: Adding a_action to the key forces a total reset when the radio flips
-               unique_key = f"b_{j}_{b_action.lower().replace(' ', '_')}"
-               if st.checkbox(str(bag), value=(b_action == "Select All"), key=unique_key): 
-                   selected_bags.append(bag)
-            st.markdown('</div>', unsafe_allow_html=True)
+            with st.expander("GBH PrePack Filter", expanded=False):
+                st.markdown("#### Filter Bag Number")
+                all_bags = sorted(df_excel_registry["Bag Number"].unique().tolist())
+                b_action = st.radio("Bag Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
+                st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+                selected_bags = [] # Make sure this list is initialized right before the loop
+                for j, bag in enumerate(all_bags):
+                # ⭐ THE TWEAK: Adding a_action to the key forces a total reset when the radio flips
+                    unique_key = f"b_{j}_{b_action.lower().replace(' ', '_')}"
+                    if st.checkbox(str(bag), value=(b_action == "Select All"), key=unique_key): 
+                        selected_bags.append(bag)
+                st.markdown('</div>', unsafe_allow_html=True)
 
             df_excel_registry = df_excel_registry[df_excel_registry["Bag Number"].isin(selected_bags)]
             df_excel_counted = df_excel_counted[df_excel_counted["Bag Number"].isin(selected_bags)]
             
-            st.dataframe(df_excel_registry, use_container_width=True, hide_index=True)
-            st.dataframe(df_excel_counted, use_container_width=True, hide_index=True)
+            # How many tickets were found that could be attributed to a check in person?
+            bag_agents = sorted(df_excel_registry["Name"].unique().tolist())
+            df_lim_filtered = filtered_df[filtered_df["Check-in by"].isin(bag_agents)]
 
+            count_in_people_with_bags = len(df_lim_filtered)
+            st.markdown("### Eventeny to GBH Database")
+            m1, m2 = st.columns(2)
+            m1.metric("Number Attributed to People with PrePack Bag: ", f"{count_in_people_with_bags:,}")
+            m2.metric("Number Missing: ", f"{(filtered_count-count_in_people_with_bags):,}")
+            
+            st.markdown("### PrePack")
+            st.dataframe(df_excel_registry, width='stretch', hide_index=True)
+            
+            st.markdown("### Eventeny")
+            display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by"]
+            available_display_cols = [c for c in display_cols if c in filtered_df.columns]
+            st.dataframe(df_lim_filtered[available_display_cols], width='stretch', hide_index=True)
+           
+            st.markdown("### Counted")
+            st.dataframe(df_excel_counted, width='stretch', hide_index=True)
+            
+            st.markdown("### Audit")
+            ticket_cols = TICKET_COLUMNS
+            # Ensure we have valid, matching datasets to perform math on
+            if not df_excel_registry.empty and not df_excel_counted.empty:
+                # 1. Standardize Bag Number column handling string/numeric quirks
+                df_pre = df_excel_registry.copy()
+                df_cnt = df_excel_counted.copy()
+                
+                df_pre["Bag Number"] = df_pre["Bag Number"].astype(str).str.strip()
+                df_cnt["Bag Number"] = df_cnt["Bag Number"].astype(str).str.strip()
+                
+                
+                # 2. Extract and align dataframes by setting Bag Number as the layout index
+                # Only pull ticket columns that actually exist in both sheets to prevent NaN crashes
+                valid_cols = [col for col in ticket_cols if col in df_pre.columns and col in df_cnt.columns]
+                
+                if valid_cols:
+                    pre_matrix = df_pre.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+                    cnt_matrix = df_cnt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+                    
+                    # 3. Align both frames completely on matching Bag Numbers
+                    # This keeps all bags from both sheets and aligns their structures
+                    all_bags = sorted(list(set(pre_matrix.index).union(set(cnt_matrix.index))))
+                    pre_matrix = pre_matrix.reindex(all_bags, fill_value=0)
+                    cnt_matrix = cnt_matrix.reindex(all_bags, fill_value=0)
+                    
+                    # 4. Perform math subtraction (PrePack - Counted)
+                    audit_matrix = pre_matrix - cnt_matrix
+                    
+                    # 5. Format it back into a beautiful UI dataframe view
+                    df_audit = audit_matrix.reset_index()
+
+                    # ⭐ THE ADDITION: Calculate row-wise sum for all columns from index 1 to the end
+                    # (Since index 0 is 'Bag Number', columns 1 to the end are your ticket counts)
+                    row_totals = df_audit.iloc[:, 1:].sum(axis=1)
+
+                    # Inject the "Total Discrepancy" column cleanly at position 1 (Column 2)
+                    df_audit.insert(1, "Total Discrepancy", row_totals)
+                    
+                    df_audit[df_audit.columns[0]] = pd.to_numeric(df_audit[df_audit.columns[0]], errors='coerce')
+                    # ⭐ THE ADDITION: Sort primarily by Total Discrepancy (Largest first)
+                    # and secondarily by Bag Number (Smallest/Alpha first)
+                    df_audit = df_audit.sort_values(
+                        by=["Total Discrepancy", df_audit.columns[0]], 
+                        ascending=[False, True]
+                    )
+                    # Display the result matrix
+                    st.dataframe(df_audit, width='stretch', hide_index=True)
+                else:
+                    st.warning("Could not find matching ticket columns between both sheets to subtract.")
+            else:
+                st.info("Waiting for both PrePack and Counted datasets to perform calculation.")
+
+            
     # ===================================================
     # NEW PAGE 4: LIVE WORKBAG SHEET ALLOCATION EDITOR (VIA ZAPIER)
     # =========================================================================
-    elif page_selection == "📝 Edit Shift Allocations":
+    elif page_selection == "📝 Count Stuff Out":
         import requests  # Ensure requests is imported at the top of your script if it isn't
         st.subheader("📝 Live Shift & Bag Allocation Editor")
         
@@ -341,8 +409,8 @@ else:
                 
                 meta_cols = [bag_label, "Name", "Notes","Date","Day","Shift Start","Shift End","Gate"]
                 meta_cols_existing = [c for c in meta_cols if c in df_excel_registry.columns]
-                ticket_cols = [col for col in df_excel_registry.columns if col not in meta_cols_existing]
-                
+                ticket_cols = TICKET_COLUMNS
+
                 ticket_inputs = {}
                 t_cols_chunks = [ticket_cols[x:x+4] for x in range(0, len(ticket_cols), 4)]
                 for chunk in t_cols_chunks:
@@ -418,7 +486,6 @@ else:
                     cat_lower_map = {cat: cat.lower().strip() for cat in ticket_item_columns}
                     reconciled_rows = []
                     
-                    print(df_excel_registry.head())
                     # Loop through your master Google Sheet registry structure to evaluate each bag
                     if not df_excel_registry.empty:
                         for _, row in df_excel_registry.iterrows():
@@ -500,7 +567,7 @@ else:
                 st.caption("You can inspect values or make direct overrides in the editable cells below before saving:")
                 
                 # Render interactive high-speed spreadsheet editor framework
-                final_edited_df = st.data_editor(df_reconciled_output, use_container_width=True, hide_index=True)
+                final_edited_df = st.data_editor(df_reconciled_output, width='stretch', hide_index=True)
                 
                 # Build seamless down-stream downloadable object memory buffer 
                 csv_payload = final_edited_df.to_csv(index=False).encode('utf-8')
@@ -514,5 +581,5 @@ else:
                     data=csv_payload,
                     file_name=f"sorted_bag_allocations_{datetime.date.today()}.csv",
                     mime="text/csv",
-                    use_container_width=True
+                    width='stretch'
                 )
