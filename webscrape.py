@@ -5,13 +5,20 @@ from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 import pandas as pd
 import datetime
+import streamlit as st
 
 # Load variables from the local .env file
 load_dotenv()
 
-LOGIN_EMAIL = os.environ.get("EVENTENY_EMAIL")
-LOGIN_PASSWORD = os.environ.get("EVENTENY_PASSWORD")
-EVENT_ID = os.environ.get("EVENTENY_EVENT_ID_25")
+try:
+    LOGIN_EMAIL = os.environ.get("EVENTENY_EMAIL")
+    LOGIN_PASSWORD = os.environ.get("EVENTENY_PASSWORD")
+    EVENT_ID = os.environ.get("EVENTENY_EVENT_ID_25")
+except:
+    LOGIN_EMAIL = st.secrets.get("EVENTENY_EMAIL")
+    LOGIN_PASSWORD = st.secrets.get("EVENTENY_PASSWORD")
+    EVENT_ID = st.secrets.get("EVENTENY_EVENT_ID_25")
+
 
 if not all([LOGIN_EMAIL, LOGIN_PASSWORD, EVENT_ID]):
     raise ValueError("Missing environment variables. Please check your .env file setup.")
