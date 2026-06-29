@@ -7,6 +7,9 @@ from playwright.async_api import async_playwright
 import pandas as pd
 import datetime
 import streamlit as st
+import tempfile
+
+temp_dir = tempfile.gettempdir()
 
 # Load variables from the local .env file
 load_dotenv()
@@ -156,12 +159,13 @@ async def automated_data_extraction():
     if response.status_code == 200:
         filename = f"live_tickets_raw_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
         raw_csv_path = f"{filename}.csv"
+        full_csv_path = os.path.join(temp_dir, raw_csv_path)
         
-        with open(raw_csv_path, "wb") as f:
+        with open(full_csv_path, "wb") as f:
             f.write(response.content)
         print("Downloaded master CSV successfully.")
 
-        return raw_csv_path
+        return full_csv_path
     else:
         print(f"Export failed with status code: {response.status_code}")
         return None
