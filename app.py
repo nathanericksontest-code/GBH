@@ -79,15 +79,39 @@ def load_google_sheet_inventory(url):
 def categorized_label(name):
     ### LABELS
     name_lower = str(name).lower()
-    if "all access" in name_lower or "all-access" in name_lower:
-        return "All-Access"
+    if "meals" in name_lower:
+        return "Meals"
     elif "weekend" in name_lower:
         return "Weekend"
+    elif "green lot" in name_lower:
+        return "Green Lot"
+    elif "blue lot" in name_lower:
+        return "Blue Lot"
+    elif "purple lot" in name_lower:
+        return "Purple Lot"
+    elif "orange lot" in name_lower:
+        return "Orange Lot"
+    elif "red lot" in name_lower:
+        return "Red Lot"
+    elif "vendor green lot" in name_lower:
+        return "Vendor Parking"
+    elif "multi color" in name_lower:
+        return "Multiguest Parking"
+    elif "white" in name_lower:
+        return "Guest Parking"
+    elif "all access" in name_lower or "all-access" in name_lower:
+        return "All-Access"
     elif "saturday" in name_lower:
         return "Saturday"
+    elif "sunday camping" in name_lower:
+        return "Sunday Camping"
     elif "sunday" in name_lower:
         return "Sunday"
-    return "Other / Upcharges / Meals"
+    elif "upgrade" in name_lower:
+        return "Upgrades"
+    else:
+        print("Unknown ticket type")
+        return "Unknown"
 
 df_raw = load_local_data()
 
@@ -106,7 +130,7 @@ is_authenticated = False
 #if page_selection in ["🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out"]:
 st.sidebar.subheader("🔒 Authentication Required")
 user_password = st.sidebar.text_input("Enter Inventory Access Password:", type="password")
-if True:###FIXX user_password == APP_PASSWORD:
+if user_password == APP_PASSWORD:
     st.sidebar.success("Access Granted!")
     is_authenticated = True
 else:
@@ -232,7 +256,7 @@ else:
             else:
                 filtered_df = filtered_df.sort_values(by=sort_choice, ascending=is_ascending)
                 
-            display_cols = ["ID", "Order ID", "Confirmation code", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by"]
+            display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by","Refunded by","Refund date"]
             available_display_cols = [c for c in display_cols if c in filtered_df.columns]
             st.dataframe(filtered_df[available_display_cols], width='stretch', hide_index=True)
             
@@ -349,7 +373,7 @@ else:
             st.markdown("### Eventeny to GBH Database")
             m1, m2 = st.columns(2)
             m1.metric("Number Attributed to People with PrePack Bag: ", f"{count_in_people_with_bags:,}")
-            m2.metric("Number Missing: ", f"{(filtered_count-count_in_people_with_bags):,}")
+            m2.metric("Number With no Matching Name: ", f"{(filtered_count-count_in_people_with_bags):,}")
             
             st.markdown("### PrePack")
             st.dataframe(df_excel_registry, width='stretch', hide_index=True)
@@ -476,7 +500,7 @@ else:
                             
                             # Create a special fallback row design
                             leftover_entry = {
-                                "Bag Number": "⚠️ OUT-OF-BOUNDS",
+                                "Bag Number": f"⚠️ OUT-OF-BOUNDS ({agent})",
                                 "Name": agent,
                                 "Shift Bounds": "Outside Scheduled Hours"
                             }
@@ -505,21 +529,22 @@ else:
                     grand_total = df_bounded_output[ticket_cols].sum().sum()
             
 
-            st.markdown("---")
-            # Displays a prominent KPI card displaying your overall total cleanly
-            m1, m2 = st.columns(2)
-            m1.metric(label="📊 Grand Total Eventeny Tickets Accounted For", value=int(grand_total))
-            m2.metric("Number Missing: ", f"{(count_in_people_with_bags-grand_total):,}")
-            
-            # Optional: Display a small itemized markdown list breaking down the counts per column
-            itemized_breakdown = ", ".join([f"**{col}**: {int(df_bounded_output[col].sum())}" for col in ticket_cols if df_bounded_output[col].sum() > 0])
-            st.markdown(f"**Itemized Scan Breakdown:** {itemized_breakdown}")
+                st.markdown("---")
+                # Displays a prominent KPI card displaying your overall total cleanly
+                m1, m2 = st.columns(2)
+                m1.metric(label="📊 Grand Total Eventeny Tickets Accounted For", value=int(grand_total))
+                m2.metric("Number With Unidentified Ticket Type: ", f"{(count_in_people_with_bags-grand_total):,}")
+                
+                # Optional: Display a small itemized markdown list breaking down the counts per column
+                itemized_breakdown = ", ".join([f"**{col}**: {int(df_bounded_output[col].sum())}" for col in ticket_cols if df_bounded_output[col].sum() > 0])
+                st.markdown(f"**Itemized Scan Breakdown:** {itemized_breakdown}")
 
 
             st.markdown("### Counted")
             st.dataframe(df_excel_counted, width='stretch', hide_index=True)
             
             st.markdown("### Audit")
+            st.markdown("###### Negative values indicate missing wristbands/stickers")
             ticket_cols = TICKET_COLUMNS
             # Ensure we have valid, matching datasets to perform math on
             if not df_excel_registry.empty and not df_excel_counted.empty:
@@ -544,13 +569,15 @@ else:
                     
                     # 3. Align both frames completely on matching Bag Numbers
                     # This keeps all bags from both sheets and aligns their structures
-                    all_bags = sorted(list(set(pre_matrix.index).union(set(cnt_matrix.index))))
+                    all_bags = sorted(list(set(cnt_matrix.index)))
                     pre_matrix = pre_matrix.reindex(all_bags, fill_value=0)
                     cnt_matrix = cnt_matrix.reindex(all_bags, fill_value=0)
+                    # ⭐ THE FIX: Group by the index to combine any duplicate row labels (like duplicate bags/names)
+                    #evt_matrix = evt_matrix.groupby(evt_matrix.index).sum()
                     evt_matrix = evt_matrix.reindex(all_bags, fill_value=0)
 
-                    # 4. Perform math subtraction (PrePack - Counted)
-                    audit_matrix = pre_matrix - cnt_matrix - evt_matrix
+                    # 4. Perform math subtraction (Negative means missing)
+                    audit_matrix = cnt_matrix + evt_matrix - pre_matrix 
                     
                     # 5. Format it back into a beautiful UI dataframe view
                     df_audit = audit_matrix.reset_index()
@@ -558,6 +585,8 @@ else:
                     # ⭐ THE ADDITION: Calculate row-wise sum for all columns from index 1 to the end
                     # (Since index 0 is 'Bag Number', columns 1 to the end are your ticket counts)
                     row_totals = df_audit.iloc[:, 1:].sum(axis=1)
+                    red_lot_exemption = df_audit["Red Lot"]
+                    row_totals = row_totals - red_lot_exemption
 
                     # Inject the "Total Discrepancy" column cleanly at position 1 (Column 2)
                     df_audit.insert(1, "Total Discrepancy", row_totals)
@@ -625,7 +654,7 @@ else:
                             except: current_qty_val = 0
                             ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=0, value=current_qty_val, step=1)
                 
-                submit_changes = st.form_submit_button("🚀 Send Updates to Zapier")
+                submit_changes = st.form_submit_button("🚀 Send Updates to Database")
             
             if submit_changes:
                 # Build payload payload explicitly so Zapier receives flat text key pairs
@@ -638,13 +667,13 @@ else:
                 for ticket_name, qty in ticket_inputs.items():
                     payload[f"ticket_{ticket_name}"] = qty
 
-                with st.spinner("Firing webhook to Zapier..."):
+                with st.spinner("Firing webhook to Database..."):
                     try:
                         ZAPIER_HOOK_URL = "https://hooks.zapier.com/hooks/catch/28076615/42ath8o/"
                         response = requests.post(ZAPIER_HOOK_URL, json=payload)
                         
                         if response.status_code in [200, 201]:
-                            st.success("🎉 Sent to Zapier! Now go to your Zapier dashboard to test the trigger.")
+                            st.success("🎉 Sent to Database! Enter next bag.")
                         else:
                             st.error(f"Zapier rejected request with status code: {response.status_code}")
                     except Exception as e:
