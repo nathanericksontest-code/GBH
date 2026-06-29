@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 import pandas as pd
+import datetime
 
 # Load variables from the local .env file
 load_dotenv()
@@ -143,7 +144,9 @@ def automated_data_extraction():
     )
 
     if response.status_code == 200:
-        raw_csv_path = "live_tickets_raw.csv"
+        filename = f"live_tickets_raw_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}"
+        raw_csv_path = f"{filename}.csv"
+        raw_json_path = f"{filename}.json"
         
         with open(raw_csv_path, "wb") as f:
             f.write(response.content)
@@ -154,8 +157,8 @@ def automated_data_extraction():
             df = pd.read_csv(raw_csv_path)
             df.columns = df.columns.str.strip()
             
-            df.to_json("live_tickets.json", orient="records", indent=4)
-            print(f"✨ GRAND SUCCESS: Saved {len(df)} records with custom fields to 'live_tickets.json'")
+            df.to_json(raw_json_path, orient="records", indent=4)
+            print(f"✨ GRAND SUCCESS: Saved {len(df)} records with custom fields to {raw_csv_path} and {raw_json_path}")
         except Exception as e:
             print(f"Error parsing CSV data mapping: {e}")
             # If parsing fails because it's a raw excel download format, show a sample

@@ -7,6 +7,7 @@ import plotly.express as px
 #from google.oauth2 import service_account
 #import gspread
 from dotenv import load_dotenv
+import requests
 
 st.set_page_config(page_title="Gate Operations Control", layout="wide")
 
@@ -46,6 +47,7 @@ try:
     raw_columns = os.environ.get("TICKET_COLUMNS")
     TICKET_COLUMNS = json.loads(raw_columns)
     DAY_TO_DATE_MAPPING = os.environ.get("DAY_TO_DATE_MAPPING")
+    GOOGLE_SHEET_UPDATE_DATA_URL = os.environ.get("GOOGLE_SHEET_UPDATE_DATA_URL")
 except:
     GOOGLE_SHEET_COUNTER_URL = st.secrets.get("GOOGLE_SHEET_COUNTER_URL")
     GOOGLE_SHEET_PREPACK_URL = st.secrets.get("GOOGLE_SHEET_PREPACK_URL")
@@ -53,8 +55,25 @@ except:
     APP_PASSWORD = st.secrets.get("APP_PASSWORD")
     TICKET_COLUMNS = st.secrets.get("TICKET_COLUMNS")
     DAY_TO_DATE_MAPPING = st.secrets.get("DAY_TO_DATE_MAPPING")
+    GOOGLE_SHEET_UPDATE_DATA_URL = st.secrets["GOOGLE_APPS_SCRIPT_URL"]
 
 
+# 1. Create a single cached resource that acts as our global storage container
+@st.cache_resource
+def get_global_store():
+    # This returns a standard, mutable dictionary that persists across all sessions
+    return {"global_df": None}
+
+# 2. Initialize the global store
+global_store = get_global_store()
+
+# 3. Helper function to read the current global data
+def get_global_data():
+    # If no admin has uploaded a file yet, load your default data
+    if global_store["global_df"] is None:
+        # Replace this with your default CSV file path or your Google Sheet URL link
+        return pd.DataFrame()
+    return global_store["global_df"]
 
 @st.cache_data(ttl=10)
 def load_evt_data(df):
@@ -148,7 +167,23 @@ else:
 # Fetch fresh copy from the cloud if authenticated
 any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
 if is_authenticated:
-    df_raw = load_google_sheet_inventory(GOOGLE_SHEET_DATA_URL)
+    st.sidebar.markdown("## 🔄 Global Data Sync")
+    uploaded_file = st.sidebar.file_uploader("Upload latest CSV", type=["csv"], key="internal_sync")
+
+    if uploaded_file is not None:
+        if st.sidebar.button("🚀 Sync Globally for EVERYONE"):
+            # Overwrite the global memory dictionary value
+            global_store["global_df"] = pd.read_csv(uploaded_file,index_col=False)
+        
+            # Clear Streamlit's UI cache so every active user drops old metrics 
+            # and pulls the fresh dataframe from global_store instantly
+            st.cache_data.clear()
+            st.sidebar.success("🎉 Data updated for all users on the server!")
+            # Force overwrite the global memory space
+
+    # 2. Every user viewing the app pulls from the exact same in-memory object
+    df_raw = get_global_data()
+    #df_raw = load_google_sheet_inventory(GOOGLE_SHEET_DATA_URL)
     df_raw = load_evt_data(df_raw)
 
 if is_authenticated and page_selection in ["🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out","📝 TEST"]:
@@ -512,7 +547,7 @@ else:
                             
                             # Create a special fallback row design
                             leftover_entry = {
-                                "Bag Number": f"⚠️ OUT-OF-BOUNDS ({agent})",
+                                "Bag Number": f"⚠️{agent}",
                                 "Name": agent,
                                 "Shift Bounds": "Outside Scheduled Hours"
                             }
@@ -598,7 +633,8 @@ else:
                     # (Since index 0 is 'Bag Number', columns 1 to the end are your ticket counts)
                     row_totals = df_audit.iloc[:, 1:].sum(axis=1)
                     red_lot_exemption = df_audit["Red Lot"]
-                    row_totals = row_totals - red_lot_exemption
+                    kids_exemption = df_audit["Kids"]
+                    row_totals = row_totals - red_lot_exemption - kids_exemption
 
                     # Inject the "Total Discrepancy" column cleanly at position 1 (Column 2)
                     df_audit.insert(1, "Total Discrepancy", row_totals)

@@ -5,3 +5,5 @@ numpy
 google-auth
 gspread
 dotenv
+requests
+st-gsheets-connection
