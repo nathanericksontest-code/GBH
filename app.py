@@ -4,8 +4,8 @@ import json
 import os
 import datetime
 import plotly.express as px
-from google.oauth2 import service_account
-import gspread
+#from google.oauth2 import service_account
+#import gspread
 from dotenv import load_dotenv
 
 st.set_page_config(page_title="Gate Operations Control", layout="wide")
