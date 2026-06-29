@@ -1,4 +1,4 @@
-streamlit>=1.35.0
+streamlit
 pandas
 plotly
 numpy
@@ -7,4 +7,4 @@ gspread
 python-dotenv
 requests
 st-gsheets-connection
-playwright==1.49.0
+playwright
