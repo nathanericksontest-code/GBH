@@ -29,7 +29,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-LIVE_DATA_FILE = "live_tickets.json"
 
 
 # =========================================================================
@@ -42,6 +41,7 @@ load_dotenv()
 try:
     GOOGLE_SHEET_COUNTER_URL = os.environ.get("GOOGLE_SHEET_COUNTER_URL")
     GOOGLE_SHEET_PREPACK_URL = os.environ.get("GOOGLE_SHEET_PREPACK_URL")
+    GOOGLE_SHEET_DATA_URL = os.environ.get("GOOGLE_SHEET_DATA_URL")
     APP_PASSWORD = os.environ.get("APP_PASSWORD")
     raw_columns = os.environ.get("TICKET_COLUMNS")
     TICKET_COLUMNS = json.loads(raw_columns)
@@ -49,6 +49,7 @@ try:
 except:
     GOOGLE_SHEET_COUNTER_URL = st.secrets.get("GOOGLE_SHEET_COUNTER_URL")
     GOOGLE_SHEET_PREPACK_URL = st.secrets.get("GOOGLE_SHEET_PREPACK_URL")
+    GOOGLE_SHEET_DATA_URL = st.secrets.get("GOOGLE_SHEET_DATA_URL")
     APP_PASSWORD = st.secrets.get("APP_PASSWORD")
     TICKET_COLUMNS = st.secrets.get("TICKET_COLUMNS")
     DAY_TO_DATE_MAPPING = st.secrets.get("DAY_TO_DATE_MAPPING")
@@ -122,8 +123,6 @@ def categorized_label(name):
         print("Unknown ticket type")
         return "Unknown"
 
-df_raw = load_local_data()
-
 # --- SIDEBAR NAVIGATION (NOW FEATURING 4 PAGES) ---
 st.sidebar.title("Navigation Dashboard")
 page_selection = st.sidebar.radio(
@@ -148,6 +147,9 @@ else:
 
 # Fetch fresh copy from the cloud if authenticated
 any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
+if is_authenticated:
+    df_raw = load_google_sheet_inventory(GOOGLE_SHEET_DATA_URL)
+    
 if is_authenticated and page_selection in ["🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out","📝 TEST"]:
     df_excel_registry = load_google_sheet_inventory(GOOGLE_SHEET_PREPACK_URL)
     df_excel_counted = load_google_sheet_inventory(GOOGLE_SHEET_COUNTER_URL)
