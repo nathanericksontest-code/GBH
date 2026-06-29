@@ -193,9 +193,9 @@ else:
 # Fetch fresh copy from the cloud if authenticated
 any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
 if is_authenticated:
-    st.sidebar.markdown("## 🔄 Access Raw Data")
+    st.sidebar.markdown("## ⬇️ Download Raw Data")
     # The Single Button Approach: Passing the function directly to the data argument
-    st.download_button(
+    st.sidebar.download_button(
         label="⬇️ Download Tickets CSV",
         data=get_csv_data(),  # Streamlit executes this function ONLY when clicked
         file_name=f"{st.session_state.download_file_path}",
