@@ -487,11 +487,23 @@ else:
                 st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
                 selected_bags = [] # Make sure this list is initialized right before the loop
                 for j, bag in enumerate(all_bags):
-                # ⭐ THE TWEAK: Adding a_action to the key forces a total reset when the radio flips
                     unique_key = f"b_{j}_{b_action.lower().replace(' ', '_')}"
-                    current_row = df_excel_registry[df_excel_registry["Bag Number"]==bag]
-                    if st.checkbox(f"{str(bag)}: From {current_row["Start Date"]} at {current_row["Shift Start"]} to {current_row["End Date"]} at {current_row["Shift End"]}", value=(b_action == "Select All"), key=unique_key): 
-                        selected_bags.append(bag)
+                    current_row = df_excel_registry[df_excel_registry["Bag Number"] == bag]
+                    
+                    # Safety Check: Make sure the row isn't empty before trying to index into it
+                    if not current_row.empty:
+                        # Extract the raw scalar values using .iloc[0]
+                        start_dt = current_row["Start Date"].iloc[0]
+                        start_tm = current_row["Shift Start"].iloc[0]
+                        end_dt   = current_row["End Date"].iloc[0]
+                        end_tm   = current_row["Shift End"].iloc[0]
+                        name     = current_row["Name"].iloc[0]
+                        
+                        # Format the label text cleanly
+                        label_text = f"{str(bag)} {name}: {start_tm} {start_dt} - {end_tm} {end_dt}"
+                        
+                        if st.checkbox(label_text, value=(b_action == "Select All"), key=unique_key): 
+                            selected_bags.append(bag)
                 st.markdown('</div>', unsafe_allow_html=True)
 
             df_excel_registry = df_excel_registry[df_excel_registry["Bag Number"].isin(selected_bags)]
