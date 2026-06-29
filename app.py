@@ -38,12 +38,21 @@ LIVE_DATA_FILE = "live_tickets.json"
 
 load_dotenv()
 
-GOOGLE_SHEET_COUNTER_URL = os.environ.get("GOOGLE_SHEET_COUNTER_URL")
-GOOGLE_SHEET_PREPACK_URL = os.environ.get("GOOGLE_SHEET_PREPACK_URL")
-APP_PASSWORD = os.environ.get("APP_PASSWORD")
-raw_columns = os.environ.get("TICKET_COLUMNS")
-TICKET_COLUMNS = json.loads(raw_columns)
-DAY_TO_DATE_MAPPING = os.environ.get("DAY_TO_DATE_MAPPING")
+
+try:
+    GOOGLE_SHEET_COUNTER_URL = os.environ.get("GOOGLE_SHEET_COUNTER_URL")
+    GOOGLE_SHEET_PREPACK_URL = os.environ.get("GOOGLE_SHEET_PREPACK_URL")
+    APP_PASSWORD = os.environ.get("APP_PASSWORD")
+    raw_columns = os.environ.get("TICKET_COLUMNS")
+    TICKET_COLUMNS = json.loads(raw_columns)
+    DAY_TO_DATE_MAPPING = os.environ.get("DAY_TO_DATE_MAPPING")
+except:
+    GOOGLE_SHEET_COUNTER_URL = st.secrets.get("GOOGLE_SHEET_COUNTER_URL")
+    GOOGLE_SHEET_PREPACK_URL = st.secrets.get("GOOGLE_SHEET_PREPACK_URL")
+    APP_PASSWORD = st.secrets.get("APP_PASSWORD")
+    TICKET_COLUMNS = st.secrets.get("TICKET_COLUMNS")
+    DAY_TO_DATE_MAPPING = st.secrets.get("DAY_TO_DATE_MAPPING")
+
 
 
 @st.cache_data(ttl=10)
