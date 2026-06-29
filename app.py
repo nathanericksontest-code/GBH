@@ -199,13 +199,55 @@ any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "�
 if is_authenticated:
     st.sidebar.markdown("## ⬇️ Download Raw Data")
     # The Single Button Approach: Passing the function directly to the data argument
-    # THE HOLY GRAIL SINGLE BUTTON
-    st.download_button(
-        label="⚡ Generate & Download Tickets CSV",
-        data=single_click_pipeline(), # This executes dynamically ON CLICK
-        file_name="live_tickets_export.csv",
-        mime="text/csv"
-    )
+
+    # A normal button does NOT run on page load. It stays completely idle.
+    if st.button("⚡ Generate & Download Tickets CSV", type="primary"):
+        
+        # 1. Create a status container so the user sees live progress updates
+        status = st.empty()
+        status.info("🚀 Launching scraper background thread... (This will take a couple of minutes)")
+        
+        try:
+            # 2. Run the heavy automation script
+            file_path = asyncio.run(webscrape.automated_data_extraction())
+            
+            if file_path and os.path.exists(file_path):
+                status.info("📦 Packaging data for browser download...")
+                
+                # 3. Read the generated file into a base64 text string
+                with open(file_path, "rb") as f:
+                    csv_bytes = f.read()
+                filename = os.path.basename(file_path)
+                b64_data = base64.b64encode(csv_bytes).decode()
+                
+                # Clean up the cloud server storage immediately
+                os.remove(file_path)
+                
+                # 4. Use a clean HTML snippet that embeds the file directly into the page.
+                # Setting 'target="_self"' tells the browser to process it instantly without a popup blocker.
+                components_html = f"""
+                <div style="text-align: center; margin-top: 10px;">
+                    <p style="color: #28a745; font-weight: bold; font-family: sans-serif;">✨ Extraction Complete! Fetching file...</p>
+                    <iframe src="data:text/csv;base64,{b64_data}" download="{filename}" style="display:none;" sandbox="allow-downloads"></iframe>
+                    <script>
+                        // Fallback to force download if iframe loading is restricted by browser policy
+                        var a = document.createElement('a');
+                        a.href = 'data:text/csv;base64,{b64_data}';
+                        a.download = '{filename}';
+                        a.click();
+                    </script>
+                </div>
+                """
+                
+                # Inject the download stream directly into the UI session
+                st.components.v1.html(components_html, height=80)
+                status.empty() # Clear out the loading notice
+                
+            else:
+                status.error("Automation completed, but no file was found on the server.")
+                
+        except Exception as e:
+            status.error(f"Extraction failed: {str(e)}")
 
 
 
