@@ -744,49 +744,35 @@ else:
             if chart2_data.empty:
                 st.warning("No data matches the selected timeframe bounds or global filter criteria.")
             else:
-                color_target = "Broad Category Group"
-    
-                color_target = "Broad Category Group"
-    
-                # --- DEBUGGING SAFETY CHECK ---
-                # This prevents the app from crashing and explicitly prints your column keys to the UI
-                required_cols = ["Bag Number", color_target]
-                missing_cols = [col for col in required_cols if col not in chart2_data.columns]
+                # 1. Define all the ticket type columns we want to stack/color by
+                ticket_columns = TICKET_COLUMNS
                 
-                if missing_cols:
-                    st.error(f"🚨 Missing expected column(s) in dataset: {missing_cols}")
-                    st.write("Available columns are:", list(chart2_data.columns))
-                else:
-                    # 1. Group by Bag Number and Ticket Type, then count the rows
-                    binned_df = (
-                        chart2_data.groupby(["Bag Number", color_target])
-                        .size()
-                        .reset_index(name="Audit Count")
-                    )
-                    
-                    # 2. Build the stacked bar chart
-                    fig = px.bar(
-                        binned_df, 
-                        x="Bag Number", 
-                        y="Audit Count", 
-                        color=color_target, 
-                        barmode="stack", 
-                        height=600, 
-                        color_discrete_sequence=px.colors.qualitative.Bold,
-                        title="Audit Results by Bag & Ticket Category"
-                    )
-                    
-                    # 3. Style layout for crisp readability
-                    fig.update_layout(
-                        hovermode="x unified", 
-                        plot_bgcolor="white",
-                        xaxis={'type': 'category'}, 
-                        yaxis_title="Total Items/Bags",
-                        xaxis_title="Bag Number"
-                    )
-                    
-                    # 4. Render to Streamlit dashboard
-                    st.plotly_chart(fig, use_container_width=True)
+                # Filter down to only columns that actually exist in the dataframe right now
+                available_tickets = [col for col in ticket_columns if col in chart2_data.columns]
+
+                # 2. Build the chart directly from the wide-format columns
+                fig = px.bar(
+                    chart2_data, 
+                    x="Bag Number", 
+                    y=available_tickets,  # Passing the list tells Plotly to stack and color by column name
+                    title="Audit Results by Bag & Ticket Category",
+                    barmode="stack", 
+                    height=600, 
+                    color_discrete_sequence=px.colors.qualitative.Bold
+                )
+                
+                # 3. Clean up the layout and legend title
+                fig.update_layout(
+                    hovermode="x unified", 
+                    plot_bgcolor="white",
+                    xaxis={'type': 'category'}, 
+                    yaxis_title="Total Count",
+                    xaxis_title="Bag Number",
+                    legend_title_text="Ticket Type"  # Renames the legend header from "variable"
+                )
+                
+                # 4. Render to Streamlit dashboard
+                st.plotly_chart(fig, use_container_width=True)
             
     # ===================================================
     # NEW PAGE 4: LIVE WORKBAG SHEET ALLOCATION EDITOR (VIA ZAPIER)
