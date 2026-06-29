@@ -69,6 +69,30 @@ def get_global_store():
 # 2. Initialize the global store
 global_store = get_global_store()
 
+def get_csv_data():
+    with st.spinner("Running browser automation & downloading dataset..."):
+        try:
+            # 1. Run the automation and get the cloud path
+            file_path = asyncio.run(webscrape.automated_data_extraction())
+            
+            if file_path and os.path.exists(file_path):
+                # 2. Read the binary data of the generated file
+                st.session_state.download_file_path = file_path
+                with open(file_path, "rb") as f:
+                    data = f.read()
+                
+                # 3. Clean up the file from the cloud server since we have it in memory now
+                os.remove(file_path)
+                
+                return data
+            else:
+                st.error("Automation completed but no file was generated.")
+                return b""
+        except Exception as e:
+            st.error(f"Extraction failed: {str(e)}")
+            return b""
+            
+
 # 3. Helper function to read the current global data
 def get_global_data():
     # If no admin has uploaded a file yet, load your default data
@@ -169,20 +193,14 @@ else:
 # Fetch fresh copy from the cloud if authenticated
 any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
 if is_authenticated:
-    st.sidebar.markdown("## 🔄 Download Raw Data")
-    if st.sidebar.button("Download Raw Data NOW"):
-        with st.spinner("Running browser automation & downloading dataset..."):
-            try:
-                # Safely run the async function on Streamlit's loop
-                file_path = asyncio.run(webscrape.automated_data_extraction())
-                
-                if file_path and os.path.exists(file_path):
-                    st.session_state.download_file_path = file_path
-                    st.success(f"Extraction process completed successfully! File downloaded to {file_path}")
-                else:
-                    st.error("Failed to generate file. Check logs.")
-            except Exception as e:
-                st.error(f"Execution failed: {str(e)}")
+    st.sidebar.markdown("## 🔄 Access Raw Data")
+    # The Single Button Approach: Passing the function directly to the data argument
+    st.download_button(
+        label="⬇️ Download Tickets CSV",
+        data=get_csv_data(),  # Streamlit executes this function ONLY when clicked
+        file_name=f"{st.session_state.download_file_path}",
+        mime="text/csv"
+    )
 
     st.sidebar.markdown("## 🔄 Global Data Sync")
     uploaded_file = st.sidebar.file_uploader("Upload latest CSV", type=["csv"], key="internal_sync")
@@ -207,6 +225,7 @@ if is_authenticated and page_selection in ["🎒 Per-Bag Inventory Audit", "📝
     df_excel_registry = load_google_sheet_inventory(GOOGLE_SHEET_PREPACK_URL)
     df_excel_counted = load_google_sheet_inventory(GOOGLE_SHEET_COUNTER_URL)
 else:
+    st.session_state.download_file_path = ""
     df_excel_registry = pd.DataFrame()
 
 # =========================================================================
