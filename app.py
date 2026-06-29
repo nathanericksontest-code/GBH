@@ -262,8 +262,6 @@ if is_authenticated:
             # Overwrite the global memory dictionary value
             global_store["global_df"] = pd.read_csv(uploaded_file,index_col=False)
             global_store["current_version"] = uploaded_file.name
-            filename_placeholder.markdown(f"Current data version: {global_store['current_version']}")
-
 
             # Clear Streamlit's UI cache so every active user drops old metrics 
             # and pulls the fresh dataframe from global_store instantly
@@ -273,6 +271,9 @@ if is_authenticated:
 
     # 2. Every user viewing the app pulls from the exact same in-memory object
     df_raw = get_global_data()
+    if not df_raw.empty:
+        filename_placeholder.markdown(f"Current data version: {global_store['current_version']}")
+
     #df_raw = load_google_sheet_inventory(GOOGLE_SHEET_DATA_URL)
     df_raw = load_evt_data(df_raw)
 
