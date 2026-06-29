@@ -746,36 +746,47 @@ else:
             else:
                 color_target = "Broad Category Group"
     
-            # 1. Group by Bag Number and Ticket Type, then count the rows
-            binned_df = (
-                chart2_data.groupby(["Bag Number", color_target])
-                .size()
-                .reset_index(name="Audit Count")
-            )
-            
-            # 2. Build the stacked bar chart
-            fig = px.bar(
-                binned_df, 
-                x="Bag Number", 
-                y="Audit Count", 
-                color=color_target, 
-                barmode="stack", 
-                height=600, 
-                color_discrete_sequence=px.colors.qualitative.Bold,
-                title="Audit Results by Bag & Ticket Category"
-            )
-            
-            # 3. Style layout for crisp readability
-            fig.update_layout(
-                hovermode="x unified", 
-                plot_bgcolor="white",
-                xaxis={'type': 'category'}, # Treats bag numbers as clean categorical labels rather than continuous numbers
-                yaxis_title="Total Items/Bags",
-                xaxis_title="Bag Number"
-            )
-            
-            # 4. Render to Streamlit dashboard
-            st.plotly_chart(fig, use_container_width=True)
+                color_target = "Broad Category Group"
+    
+                # --- DEBUGGING SAFETY CHECK ---
+                # This prevents the app from crashing and explicitly prints your column keys to the UI
+                required_cols = ["Bag Number", color_target]
+                missing_cols = [col for col in required_cols if col not in chart2_data.columns]
+                
+                if missing_cols:
+                    st.error(f"🚨 Missing expected column(s) in dataset: {missing_cols}")
+                    st.write("Available columns are:", list(chart2_data.columns))
+                else:
+                    # 1. Group by Bag Number and Ticket Type, then count the rows
+                    binned_df = (
+                        chart2_data.groupby(["Bag Number", color_target])
+                        .size()
+                        .reset_index(name="Audit Count")
+                    )
+                    
+                    # 2. Build the stacked bar chart
+                    fig = px.bar(
+                        binned_df, 
+                        x="Bag Number", 
+                        y="Audit Count", 
+                        color=color_target, 
+                        barmode="stack", 
+                        height=600, 
+                        color_discrete_sequence=px.colors.qualitative.Bold,
+                        title="Audit Results by Bag & Ticket Category"
+                    )
+                    
+                    # 3. Style layout for crisp readability
+                    fig.update_layout(
+                        hovermode="x unified", 
+                        plot_bgcolor="white",
+                        xaxis={'type': 'category'}, 
+                        yaxis_title="Total Items/Bags",
+                        xaxis_title="Bag Number"
+                    )
+                    
+                    # 4. Render to Streamlit dashboard
+                    st.plotly_chart(fig, use_container_width=True)
             
     # ===================================================
     # NEW PAGE 4: LIVE WORKBAG SHEET ALLOCATION EDITOR (VIA ZAPIER)
