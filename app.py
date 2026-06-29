@@ -195,12 +195,14 @@ else:
 
 st.sidebar.markdown("---")
 
-filename_placeholder = st.sidebar.empty()
+
 
 # Fetch fresh copy from the cloud if authenticated
 any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
 if is_authenticated:
-    st.sidebar.markdown("## ⬇️ Download Raw Data")
+    #st.sidebar.markdown("## ⬇️ Download Raw Data")
+    st.sidebar.markdown("## 🔄 Global Data Sync")
+    filename_placeholder = st.sidebar.empty()
     # The Single Button Approach: Passing the function directly to the data argument
 
     # A normal button does NOT run on page load. It stays completely idle.
@@ -254,7 +256,7 @@ if is_authenticated:
 
 
 
-    st.sidebar.markdown("## 🔄 Global Data Sync")
+    #st.sidebar.markdown("## 🔄 Global Data Sync")
     uploaded_file = st.sidebar.file_uploader("Upload latest CSV", type=["csv"], key="internal_sync")
 
     if uploaded_file is not None:
@@ -272,7 +274,7 @@ if is_authenticated:
     # 2. Every user viewing the app pulls from the exact same in-memory object
     df_raw = get_global_data()
     if not df_raw.empty:
-        filename_placeholder.markdown(f"Current data version: {global_store['current_version']}")
+        filename_placeholder.markdown(f"Last uploaded version: {global_store['current_version']}")
 
     #df_raw = load_google_sheet_inventory(GOOGLE_SHEET_DATA_URL)
     df_raw = load_evt_data(df_raw)
