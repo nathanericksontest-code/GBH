@@ -11,3 +11,4 @@ os
 json
 playwright
 datetime
+asyncio

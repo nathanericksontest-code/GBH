@@ -1,8 +1,9 @@
 import os
 import json
 import requests
+import asyncio  # <-- Required to run the async loop
 from dotenv import load_dotenv
-from playwright.sync_api import sync_playwright
+from playwright.async_api import async_playwright
 import pandas as pd
 import datetime
 import streamlit as st
@@ -14,52 +15,55 @@ try:
     LOGIN_EMAIL = os.environ.get("EVENTENY_EMAIL")
     LOGIN_PASSWORD = os.environ.get("EVENTENY_PASSWORD")
     EVENT_ID = os.environ.get("EVENTENY_EVENT_ID_25")
-except:
+except Exception:
     LOGIN_EMAIL = st.secrets.get("EVENTENY_EMAIL")
     LOGIN_PASSWORD = st.secrets.get("EVENTENY_PASSWORD")
     EVENT_ID = st.secrets.get("EVENTENY_EVENT_ID_25")
 
-
 if not all([LOGIN_EMAIL, LOGIN_PASSWORD, EVENT_ID]):
     raise ValueError("Missing environment variables. Please check your .env file setup.")
 
-def get_authenticated_session():
+# 1. Marked as async since it contains await expressions
+async def get_authenticated_session():
     """Launches a brief headless browser to securely log in, bypass any 
-
     CSRF/bot defenses, and extract a live valid cookie jar.
     """
     print("Launching browser automation to sign in...")
     session = requests.Session()
     
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
+    # 2. Used "async with" for the async context manager
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context()
+        page = await context.new_page()
         
         # Go to the actual login interface
-        page.goto('https://www.eventeny.com/users/?ref=/login/');
+        await page.goto('https://www.eventeny.com/users/?ref=/login/')
 
         # Fill out login credentials
-        page.fill('input[type="email"]', LOGIN_EMAIL);
-        page.fill('input[type="password"]', LOGIN_PASSWORD);
-        page.locator('button:has-text("Sign in"), input[type="submit"]').first.click()
+        await page.fill('input[type="email"]', LOGIN_EMAIL)
+        await page.fill('input[type="password"]', LOGIN_PASSWORD)
+        await page.locator('button:has-text("Sign in"), input[type="submit"]').first.click()
 
-        #Wait for login redirection to finish
-        page.click('text=Organize'); 
+        # Wait for login redirection to finish
+        await page.click('text=Organize') 
         print("Login sequence successfully authenticated via browser!")
         
         # Extract the fresh, live cookies from the browser session
-        browser_cookies = context.cookies()
+        # 3. cookies() must be awaited in the async API
+        browser_cookies = await context.cookies()
         for cookie in browser_cookies:
+            # Note: requests.Session().cookies.set is synchronous, no await needed here
             session.cookies.set(cookie['name'], cookie['value'], domain=cookie['domain'])
             
-        browser.close()
+        await browser.close()
         
     return session
 
-def automated_data_extraction():
+# 4. Marked as async because it calls and awaits get_authenticated_session
+async def automated_data_extraction():
     try:
-        session = get_authenticated_session()
+        session = await get_authenticated_session()
     except Exception as e:
         print(f"Browser login phase failed: {str(e)}")
         return
@@ -73,7 +77,6 @@ def automated_data_extraction():
         'origin': 'https://www.eventeny.com'
     }
 
-    # We use a list of tuples here because dictionary keys cannot look identical ('export_columns[]')
     export_payload = [
         ('1', '1'),
         ('type', 'uploaded file'),
@@ -143,6 +146,7 @@ def automated_data_extraction():
     ]
 
     print("Requesting master Excel export stream from primary document endpoint...")
+    # Keeping requests synchronous as before
     response = session.post(
         f'https://www.eventeny.com/dashboard/events/event/tickets/list/?id={EVENT_ID}',
         headers=headers,
@@ -150,29 +154,15 @@ def automated_data_extraction():
     )
 
     if response.status_code == 200:
-        filename = f"live_tickets_raw_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}"
+        filename = f"live_tickets_raw_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
         raw_csv_path = f"{filename}.csv"
-        #raw_json_path = f"{filename}.json"
         
         with open(raw_csv_path, "wb") as f:
             f.write(response.content)
-        print(f"Downloaded master CSV successfully.")
-
-        #try:
-            # Clean up the file to feed standard JSON
-        #    df = pd.read_csv(raw_csv_path)
-        #    df.columns = df.columns.str.strip()
-            
-            #df.to_json(raw_json_path, orient="records", indent=4)
-            #print(f"✨ GRAND SUCCESS: Saved {len(df)} records with custom fields to {raw_csv_path}")
-        #except Exception as e:
-        #    print(f"Error parsing CSV data mapping: {e}")
-        #    # If parsing fails because it's a raw excel download format, show a sample
-        #    with open(raw_csv_path, 'r', encoding='utf-8', errors='ignore') as f:
-        #        print("First 100 characters of file:", f.read(100))
+        print("Downloaded master CSV successfully.")
     else:
         print(f"Export failed with status code: {response.status_code}")
         
 if __name__ == "__main__":
-    automated_data_extraction()
-    
+    # 5. Execute the async loop
+    asyncio.run(automated_data_extraction())
