@@ -55,7 +55,7 @@ except:
     APP_PASSWORD = st.secrets.get("APP_PASSWORD")
     TICKET_COLUMNS = st.secrets.get("TICKET_COLUMNS")
     DAY_TO_DATE_MAPPING = st.secrets.get("DAY_TO_DATE_MAPPING")
-    GOOGLE_SHEET_UPDATE_DATA_URL = st.secrets["GOOGLE_APPS_SCRIPT_URL"]
+    GOOGLE_SHEET_UPDATE_DATA_URL = st.secrets["GOOGLE_SHEET_UPDATE_DATA_URL"]
 
 
 # 1. Create a single cached resource that acts as our global storage container
