@@ -14,61 +14,6 @@ import base64
 
 st.set_page_config(page_title="Gate Operations Control", layout="wide")
 
-# st.markdown(
-#     """
-#     <style>
-#         /* === 1. TEXT SIZE OVERRIDES === */
-#         /* Make all radio option labels and checkbox labels bigger */
-#         div[data-testid="stRadio"] label p, 
-#         div[data-testid="stCheckbox"] label p,
-#         div[data-testid="stCheckbox"] p {
-#             font-size: 19px !important;
-#             font-weight: 500 !important;
-#             line-height: 1.2 !important;
-#         }
-        
-#         /* Make widget headers bigger (e.g., "Go to view:", "Ticket Shortcuts:") */
-#         div[data-testid="stRadio"] > label,
-#         div[data-testid="stCheckboxGroup"] > label {
-#             font-size: 21px !important;
-#             font-weight: bold !important;
-#             margin-bottom: 4px !important;
-#         }
-
-#         /* === 2. SPACING REDUCTION OVERRIDES === */
-#         /* Reduce spacing between individual radio options */
-#         div[data-testid="stRadio"] div[role="radiogroup"] > div {
-#             padding-top: 2px !important;
-#             padding-bottom: 2px !important;
-#             margin-bottom: 0px !important;
-#         }
-
-#         /* Reduce spacing between individual checkboxes */
-#         div[data-testid="stCheckbox"] {
-#             margin-bottom: -4px !important;
-#             padding-top: 0px !important;
-#             padding-bottom: 0px !important;
-#         }
-
-#         /* Tighten up the container wrapping the widget elements */
-#         div[data-testid="stRadio"] div[role="radiogroup"],
-#         div[data-testid="stCheckboxGroup"] {
-#             gap: 2px !important;
-#         }
-        
-#         /* Scale up icons slightly to match text */
-#         div[data-testid="stRadio"] input[type="radio"] + div {
-#             transform: scale(1.15);
-#         }
-#         div[data-testid="stCheckbox"] input[type="checkbox"] + div {
-#             transform: scale(1.15);
-#         }
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
-
-
 
 # =========================================================================
 # 🔐 GOOGLE SHEETS & ACCESS SECURITY SETTINGS
@@ -208,31 +153,7 @@ def categorized_label(name):
 
 # --- SIDEBAR NAVIGATION (NOW FEATURING 4 PAGES) ---
 st.sidebar.title("Navigation Dashboard")
-# Inject custom CSS to scale the radio button icons and text
-st.sidebar.markdown(
-    """
-    <style>
-        /* 1. Make the radio button text larger */
-        div[data-testid="stRadio"] label p {
-            font-size: 20px !important;
-            font-weight: 500 !important;
-        }
-        
-        /* 2. Scale up the actual radio outer circle icons */
-        div[data-testid="stRadio"]  div[role="radiogroup"] [data-testid="stWidgetLabel"] + div div[class*="st-"] {
-            transform: scale(1.5);
-            margin-right: 5px;
-        }
 
-        /* 3. Make the section header text larger (Go to view:) */
-        div[data-testid="stRadio"] > label {
-            font-size: 22px !important;
-            font-weight: bold !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
 
 # Your existing radio component
 page_selection = st.sidebar.radio(
@@ -1027,3 +948,84 @@ else:
                     mime="text/csv",
                     width='stretch'
                 )
+
+
+
+# st.markdown(
+#     """
+#     <style>
+#         /* === 1. TEXT SIZE OVERRIDES === */
+#         /* Make all radio option labels and checkbox labels bigger */
+#         div[data-testid="stRadio"] label p, 
+#         div[data-testid="stCheckbox"] label p,
+#         div[data-testid="stCheckbox"] p {
+#             font-size: 19px !important;
+#             font-weight: 500 !important;
+#             line-height: 1.2 !important;
+#         }
+        
+#         /* Make widget headers bigger (e.g., "Go to view:", "Ticket Shortcuts:") */
+#         div[data-testid="stRadio"] > label,
+#         div[data-testid="stCheckboxGroup"] > label {
+#             font-size: 21px !important;
+#             font-weight: bold !important;
+#             margin-bottom: 4px !important;
+#         }
+
+#         /* === 2. SPACING REDUCTION OVERRIDES === */
+#         /* Reduce spacing between individual radio options */
+#         div[data-testid="stRadio"] div[role="radiogroup"] > div {
+#             padding-top: 2px !important;
+#             padding-bottom: 2px !important;
+#             margin-bottom: 0px !important;
+#         }
+
+#         /* Reduce spacing between individual checkboxes */
+#         div[data-testid="stCheckbox"] {
+#             margin-bottom: -4px !important;
+#             padding-top: 0px !important;
+#             padding-bottom: 0px !important;
+#         }
+
+#         /* Tighten up the container wrapping the widget elements */
+#         div[data-testid="stRadio"] div[role="radiogroup"],
+#         div[data-testid="stCheckboxGroup"] {
+#             gap: 2px !important;
+#         }
+        
+#         /* Scale up icons slightly to match text */
+#         div[data-testid="stRadio"] input[type="radio"] + div {
+#             transform: scale(1.15);
+#         }
+#         div[data-testid="stCheckbox"] input[type="checkbox"] + div {
+#             transform: scale(1.15);
+#         }
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
+
+# st.sidebar.markdown(
+#     """
+#     <style>
+#         /* 1. Make the radio button text larger */
+#         div[data-testid="stRadio"] label p {
+#             font-size: 20px !important;
+#             font-weight: 500 !important;
+#         }
+        
+#         /* 2. Scale up the actual radio outer circle icons */
+#         div[data-testid="stRadio"]  div[role="radiogroup"] [data-testid="stWidgetLabel"] + div div[class*="st-"] {
+#             transform: scale(1.5);
+#             margin-right: 5px;
+#         }
+
+#         /* 3. Make the section header text larger (Go to view:) */
+#         div[data-testid="stRadio"] > label {
+#             font-size: 22px !important;
+#             font-weight: bold !important;
+#         }
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
