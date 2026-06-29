@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import requests
 import webscrape
 import asyncio
+import base64
 
 st.set_page_config(page_title="Gate Operations Control", layout="wide")
 
@@ -195,12 +196,55 @@ any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "�
 if is_authenticated:
     st.sidebar.markdown("## ⬇️ Download Raw Data")
     # The Single Button Approach: Passing the function directly to the data argument
-    st.sidebar.download_button(
-        label="⬇️ Download Tickets CSV",
-        data=get_csv_data(),  # Streamlit executes this function ONLY when clicked
-        file_name=f"{st.session_state.download_file_path}",
-        mime="text/csv"
-    )
+    # st.sidebar.download_button(
+    #     label="⬇️ Download Tickets CSV",
+    #     data=get_csv_data(),  # Streamlit executes this function ONLY when clicked
+    #     file_name=f"{st.session_state.download_file_path}",
+    #     mime="text/csv"
+    # )
+
+    # Single button execution
+    if st.button("⚡ Generate & Download Tickets CSV"):
+        with st.spinner("Running browser automation & downloading dataset..."):
+            try:
+                # 1. Run the Playwright extraction script
+                file_path = asyncio.run(webscrape.automated_data_extraction())
+                
+                if file_path and os.path.exists(file_path):
+                    # 2. Read the file bytes
+                    with open(file_path, "rb") as f:
+                        csv_bytes = f.read()
+                    
+                    filename = os.path.basename(file_path)
+                    
+                    # 3. Encode the file data to a base64 string for a safe browser transfer
+                    b64_data = base64.b64encode(csv_bytes).decode()
+                    
+                    # 4. Clean up cloud server file storage
+                    os.remove(file_path)
+                    
+                    # 5. Inject JavaScript to trigger a programmatic click event in the user's browser
+                    js_download = f"""
+                    <script>
+                        var a = document.createElement('a');
+                        a.href = 'data:text/csv;base64,{b64_data}';
+                        a.download = '{filename}';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    </script>
+                    """
+                    st.components.v1.html(js_download, height=0, width=0)
+                    st.success("Download started!")
+                    
+                else:
+                    st.error("Automation completed but no file was generated.")
+            except Exception as e:
+                st.error(f"Extraction failed: {str(e)}")
+
+
+
+
 
     st.sidebar.markdown("## 🔄 Global Data Sync")
     uploaded_file = st.sidebar.file_uploader("Upload latest CSV", type=["csv"], key="internal_sync")
