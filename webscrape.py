@@ -36,7 +36,7 @@ async def get_authenticated_session():
     
     # 2. Used "async with" for the async context manager
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
+        browser = await p.chromium.launch(headless=True,executable_path="/usr/bin/chromium")
         context = await browser.new_context()
         page = await context.new_page()
         
