@@ -57,13 +57,13 @@ except:
 
 
 @st.cache_data(ttl=10)
-def load_local_data():
-    if not os.path.exists(LIVE_DATA_FILE):
-        return pd.DataFrame(columns=["Check-in time_parsed", "Check-in Day Name", "Check-in by", "Ticket name", "Status"])
-    with open(LIVE_DATA_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    df = pd.DataFrame(data)
-    df.columns = df.columns.str.strip()
+def load_evt_data(df):
+    # if not os.path.exists(LIVE_DATA_FILE):
+    #     return pd.DataFrame(columns=["Check-in time_parsed", "Check-in Day Name", "Check-in by", "Ticket name", "Status"])
+    # with open(LIVE_DATA_FILE, "r", encoding="utf-8") as f:
+    #     data = json.load(f)
+    # df = pd.DataFrame(data)
+    # df.columns = df.columns.str.strip()
     
     if "Check-in time" in df.columns:
         df["Check-in time_parsed"] = pd.to_datetime(df["Check-in time"].str.strip(), format="%b %d, %Y %I:%M %p", errors="coerce")
@@ -149,7 +149,8 @@ else:
 any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
 if is_authenticated:
     df_raw = load_google_sheet_inventory(GOOGLE_SHEET_DATA_URL)
-    
+    df_raw = load_evt_data(df_raw)
+
 if is_authenticated and page_selection in ["🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out","📝 TEST"]:
     df_excel_registry = load_google_sheet_inventory(GOOGLE_SHEET_PREPACK_URL)
     df_excel_counted = load_google_sheet_inventory(GOOGLE_SHEET_COUNTER_URL)
