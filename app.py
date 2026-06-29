@@ -65,7 +65,7 @@ except:
 @st.cache_resource
 def get_global_store():
     # This returns a standard, mutable dictionary that persists across all sessions
-    return {"global_df": None}
+    return {"global_df": None, "current_version":None}
 
 # 2. Initialize the global store
 global_store = get_global_store()
@@ -101,7 +101,6 @@ def single_click_pipeline():
 def get_global_data():
     # If no admin has uploaded a file yet, load your default data
     if global_store["global_df"] is None:
-        # Replace this with your default CSV file path or your Google Sheet URL link
         return pd.DataFrame()
     return global_store["global_df"]
 
@@ -194,6 +193,10 @@ else:
     if user_password != "": st.sidebar.error("Incorrect Password")
     is_authenticated = False
 
+st.sidebar.markdown("---")
+
+st.sidebar.markdown(f"Current data version: {global_store['current_version']}")
+
 # Fetch fresh copy from the cloud if authenticated
 any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
 if is_authenticated:
@@ -201,7 +204,7 @@ if is_authenticated:
     # The Single Button Approach: Passing the function directly to the data argument
 
     # A normal button does NOT run on page load. It stays completely idle.
-    if st.button("⚡ Generate & Download Tickets CSV", type="primary"):
+    if st.sidebar.button("⬇️ Download Tickets CSV"):
         
         # 1. Create a status container so the user sees live progress updates
         status = st.empty()
@@ -258,7 +261,8 @@ if is_authenticated:
         if st.sidebar.button("🚀 Sync Globally for EVERYONE"):
             # Overwrite the global memory dictionary value
             global_store["global_df"] = pd.read_csv(uploaded_file,index_col=False)
-        
+            global_store["current_version"] = uploaded_file.name
+
             # Clear Streamlit's UI cache so every active user drops old metrics 
             # and pulls the fresh dataframe from global_store instantly
             st.cache_data.clear()
