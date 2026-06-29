@@ -173,9 +173,43 @@ def categorized_label(name):
 
 # --- SIDEBAR NAVIGATION (NOW FEATURING 4 PAGES) ---
 st.sidebar.title("Navigation Dashboard")
+# Inject custom CSS to scale the radio button icons and text
+st.sidebar.markdown(
+    """
+    <style>
+        /* 1. Make the radio button text larger */
+        div[data-testid="stRadio"] label p {
+            font-size: 20px !important;
+            font-weight: 500 !important;
+        }
+        
+        /* 2. Scale up the actual radio outer circle icons */
+        div[data-testid="stRadio"]  div[role="radiogroup"] [data-testid="stWidgetLabel"] + div div[class*="st-"] {
+            transform: scale(1.5);
+            margin-right: 5px;
+        }
+
+        /* 3. Make the section header text larger (Go to view:) */
+        div[data-testid="stRadio"] > label {
+            font-size: 22px !important;
+            font-weight: bold !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# Your existing radio component
 page_selection = st.sidebar.radio(
-    "Go to view:", 
-    ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
+    "Go to view:",
+    options=[
+        "📋 Live Transaction Ledger",
+        "📊 Check-In Analytics Chart",
+        "🎒 Per-Bag Inventory Audit",
+        "📝 Count Stuff Out",
+        "📝 TEST"
+    ],
+    key="navigation_dashboard"
 )
 st.sidebar.markdown("---")
 
@@ -387,7 +421,7 @@ else:
         else:
             col1, col2 = st.columns(2)
             with col1:
-                sort_choice = st.selectbox("Primary Sort Column", options=["Check-in time", "Check-in by", "Ticket name", "Broad Category Group", "ID"])
+                sort_choice = st.selectbox("Primary Sort Column", options=["Check-in time", "Check-in by", "Ticket name", "Broad Category Group"])
             with col2:
                 sort_order = st.radio("Direction", options=["Ascending ⬆️", "Descending ⬇️"], horizontal=True)
         
