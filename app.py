@@ -760,26 +760,40 @@ else:
                     color_discrete_sequence=px.colors.qualitative.Bold
                 )
                 
-                # Change hovermode from "x unified" to "closest"
+                # 1. Clean up layout axes (Removing vertical dotted grid lines)
                 fig.update_layout(
-                    hovermode="closest",  # Focuses directly on the specific bar the cursor touches
+                    hovermode="closest",  
                     plot_bgcolor="white",
                     xaxis={
                         'type': 'category',
-                        'showgrid': True,      
-                        'gridcolor': '#E5E5E5' 
+                        'showgrid': False,     # Strips out the vertical grid lines entirely
                     }, 
                     yaxis={
                         'zeroline': True,      
                         'zerolinecolor': 'black',
                         'zerolinewidth': 1.5,
+                        'showgrid': True,      # Keep horizontal lines for tracking values
                         'gridcolor': '#F0F0F0'
                     },
                     yaxis_title="Count / Discrepancy",
                     xaxis_title="Bag Number",
                     legend_title_text="Ticket Type"
                 )
+
+                # 2. Add alternating gray background shading for each unique bag group
+                unique_bags = chart2_data["Bag Number"].unique().tolist()
                 
+                for index, bag in enumerate(unique_bags):
+                    if index % 2 == 0:  # Alternate every other bag group
+                        fig.add_vrect(
+                            x0=index - 0.5,   # Stretch shading from the left edge of the group boundary
+                            x1=index + 0.5,   # To the right edge of the group boundary
+                            fillcolor="#F7F7F8", 
+                            opacity=1.0, 
+                            layer="below",    # Forces the shading background behind the colorful data bars
+                            line_width=0
+                        )
+                        
                 st.plotly_chart(fig, use_container_width=True)
             
     # ===================================================
