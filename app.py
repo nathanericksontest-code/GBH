@@ -760,16 +760,17 @@ else:
                     color_discrete_sequence=px.colors.qualitative.Bold
                 )
                 
+                # Change hovermode from "x unified" to "closest"
                 fig.update_layout(
-                    hovermode="x unified", 
+                    hovermode="closest",  # Focuses directly on the specific bar the cursor touches
                     plot_bgcolor="white",
                     xaxis={
                         'type': 'category',
-                        'showgrid': True,      # Adds subtle vertical grid dividers
-                        'gridcolor': '#E5E5E5' # Keeps the grid lines light and clean
+                        'showgrid': True,      
+                        'gridcolor': '#E5E5E5' 
                     }, 
                     yaxis={
-                        'zeroline': True,      # Bold line at 0 to clearly separate pos/neg
+                        'zeroline': True,      
                         'zerolinecolor': 'black',
                         'zerolinewidth': 1.5,
                         'gridcolor': '#F0F0F0'
