@@ -171,7 +171,18 @@ any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "�
 if is_authenticated:
     st.sidebar.markdown("## 🔄 Download Raw Data")
     if st.sidebar.button("Download Raw Data NOW"):
-        asyncio.run(webscrape.automated_data_extraction())
+        with st.spinner("Running browser automation & downloading dataset..."):
+            try:
+                # Safely run the async function on Streamlit's loop
+                file_path = asyncio.run(webscrape.automated_data_extraction())
+                
+                if file_path and os.path.exists(file_path):
+                    st.session_state.download_file_path = file_path
+                    st.success("Extraction process completed successfully!")
+                else:
+                    st.error("Failed to generate file. Check logs.")
+            except Exception as e:
+                st.error(f"Execution failed: {str(e)}")
 
     st.sidebar.markdown("## 🔄 Global Data Sync")
     uploaded_file = st.sidebar.file_uploader("Upload latest CSV", type=["csv"], key="internal_sync")

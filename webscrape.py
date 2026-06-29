@@ -160,9 +160,12 @@ async def automated_data_extraction():
         with open(raw_csv_path, "wb") as f:
             f.write(response.content)
         print("Downloaded master CSV successfully.")
+
+        return raw_csv_path
     else:
         print(f"Export failed with status code: {response.status_code}")
-        
+        return None
+    
 if __name__ == "__main__":
     # 5. Execute the async loop
-    asyncio.run(automated_data_extraction())
+    file_path = asyncio.run(automated_data_extraction())
