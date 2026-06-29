@@ -3,7 +3,6 @@ import json
 import requests
 from dotenv import load_dotenv
 from playwright.sync_api import sync_playwright
-from dotenv import load_dotenv
 import pandas as pd
 import datetime
 
@@ -146,24 +145,24 @@ def automated_data_extraction():
     if response.status_code == 200:
         filename = f"live_tickets_raw_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}"
         raw_csv_path = f"{filename}.csv"
-        raw_json_path = f"{filename}.json"
+        #raw_json_path = f"{filename}.json"
         
         with open(raw_csv_path, "wb") as f:
             f.write(response.content)
         print(f"Downloaded master CSV successfully.")
 
-        try:
+        #try:
             # Clean up the file to feed standard JSON
-            df = pd.read_csv(raw_csv_path)
-            df.columns = df.columns.str.strip()
+        #    df = pd.read_csv(raw_csv_path)
+        #    df.columns = df.columns.str.strip()
             
-            df.to_json(raw_json_path, orient="records", indent=4)
-            print(f"✨ GRAND SUCCESS: Saved {len(df)} records with custom fields to {raw_csv_path} and {raw_json_path}")
-        except Exception as e:
-            print(f"Error parsing CSV data mapping: {e}")
-            # If parsing fails because it's a raw excel download format, show a sample
-            with open(raw_csv_path, 'r', encoding='utf-8', errors='ignore') as f:
-                print("First 100 characters of file:", f.read(100))
+            #df.to_json(raw_json_path, orient="records", indent=4)
+            #print(f"✨ GRAND SUCCESS: Saved {len(df)} records with custom fields to {raw_csv_path}")
+        #except Exception as e:
+        #    print(f"Error parsing CSV data mapping: {e}")
+        #    # If parsing fails because it's a raw excel download format, show a sample
+        #    with open(raw_csv_path, 'r', encoding='utf-8', errors='ignore') as f:
+        #        print("First 100 characters of file:", f.read(100))
     else:
         print(f"Export failed with status code: {response.status_code}")
         

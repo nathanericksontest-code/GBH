@@ -8,6 +8,7 @@ import plotly.express as px
 #import gspread
 from dotenv import load_dotenv
 import requests
+import webscrape
 
 st.set_page_config(page_title="Gate Operations Control", layout="wide")
 
@@ -167,6 +168,10 @@ else:
 # Fetch fresh copy from the cloud if authenticated
 any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
 if is_authenticated:
+    st.sidebar.markdown("## 🔄 Download Raw Data")
+    if st.sidebar.button("Download Raw Data NOW"):
+        webscrape.automated_data_extraction()
+
     st.sidebar.markdown("## 🔄 Global Data Sync")
     uploaded_file = st.sidebar.file_uploader("Upload latest CSV", type=["csv"], key="internal_sync")
 

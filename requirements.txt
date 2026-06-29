@@ -7,3 +7,7 @@ gspread
 dotenv
 requests
 st-gsheets-connection
+os
+json
+playwright
+datetime
