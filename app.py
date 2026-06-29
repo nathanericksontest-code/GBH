@@ -747,31 +747,38 @@ else:
                 # 1. Define all the ticket type columns we want to stack/color by
                 ticket_columns = TICKET_COLUMNS
                 
-                # Filter down to only columns that actually exist in the dataframe right now
                 available_tickets = [col for col in ticket_columns if col in chart2_data.columns]
 
-                # 2. Build the chart directly from the wide-format columns
+                # CHANGED: barmode="group" places categories side-by-side
                 fig = px.bar(
                     chart2_data, 
                     x="Bag Number", 
-                    y=available_tickets,  # Passing the list tells Plotly to stack and color by column name
+                    y=available_tickets,
                     title="Audit Results by Bag & Ticket Category",
-                    barmode="stack", 
+                    barmode="group",  
                     height=600, 
                     color_discrete_sequence=px.colors.qualitative.Bold
                 )
                 
-                # 3. Clean up the layout and legend title
                 fig.update_layout(
                     hovermode="x unified", 
                     plot_bgcolor="white",
-                    xaxis={'type': 'category'}, 
-                    yaxis_title="Total Count",
+                    xaxis={
+                        'type': 'category',
+                        'showgrid': True,      # Adds subtle vertical grid dividers
+                        'gridcolor': '#E5E5E5' # Keeps the grid lines light and clean
+                    }, 
+                    yaxis={
+                        'zeroline': True,      # Bold line at 0 to clearly separate pos/neg
+                        'zerolinecolor': 'black',
+                        'zerolinewidth': 1.5,
+                        'gridcolor': '#F0F0F0'
+                    },
+                    yaxis_title="Count / Discrepancy",
                     xaxis_title="Bag Number",
-                    legend_title_text="Ticket Type"  # Renames the legend header from "variable"
+                    legend_title_text="Ticket Type"
                 )
                 
-                # 4. Render to Streamlit dashboard
                 st.plotly_chart(fig, use_container_width=True)
             
     # ===================================================
