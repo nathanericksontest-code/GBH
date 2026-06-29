@@ -4,11 +4,7 @@ plotly
 numpy
 google-auth
 gspread
-dotenv
+python-dotenv
 requests
 st-gsheets-connection
-os
-json
-playwright
-datetime
-asyncio
+playwright==1.49.0
