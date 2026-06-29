@@ -489,7 +489,8 @@ else:
                 for j, bag in enumerate(all_bags):
                 # ⭐ THE TWEAK: Adding a_action to the key forces a total reset when the radio flips
                     unique_key = f"b_{j}_{b_action.lower().replace(' ', '_')}"
-                    if st.checkbox(str(bag), value=(b_action == "Select All"), key=unique_key): 
+                    current_row = df_excel_registry[df_excel_registry["Bag Number"]==bag]
+                    if st.checkbox(f"{str(bag)}: From {current_row["Start Date"]} at {current_row["Shift Start"]} to {current_row["End Date"]} at {current_row["Shift End"]}", value=(b_action == "Select All"), key=unique_key): 
                         selected_bags.append(bag)
                 st.markdown('</div>', unsafe_allow_html=True)
 
