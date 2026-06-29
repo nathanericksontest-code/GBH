@@ -178,7 +178,7 @@ if is_authenticated:
                 
                 if file_path and os.path.exists(file_path):
                     st.session_state.download_file_path = file_path
-                    st.success("Extraction process completed successfully!")
+                    st.success(f"Extraction process completed successfully! File downloaded to {file_path}")
                 else:
                     st.error("Failed to generate file. Check logs.")
             except Exception as e:
