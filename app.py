@@ -737,6 +737,45 @@ else:
             else:
                 st.info("Waiting for both PrePack and Counted datasets to perform calculation.")
 
+
+            st.write("Analytics View")
+            # (...Keep original Page 2 Charts layout code intact...)
+            chart2_data = df_audit.copy()
+            if chart2_data.empty:
+                st.warning("No data matches the selected timeframe bounds or global filter criteria.")
+            else:
+                color_target = "Broad Category Group"
+    
+            # 1. Group by Bag Number and Ticket Type, then count the rows
+            binned_df = (
+                chart2_data.groupby(["Bag Number", color_target])
+                .size()
+                .reset_index(name="Audit Count")
+            )
+            
+            # 2. Build the stacked bar chart
+            fig = px.bar(
+                binned_df, 
+                x="Bag Number", 
+                y="Audit Count", 
+                color=color_target, 
+                barmode="stack", 
+                height=600, 
+                color_discrete_sequence=px.colors.qualitative.Bold,
+                title="Audit Results by Bag & Ticket Category"
+            )
+            
+            # 3. Style layout for crisp readability
+            fig.update_layout(
+                hovermode="x unified", 
+                plot_bgcolor="white",
+                xaxis={'type': 'category'}, # Treats bag numbers as clean categorical labels rather than continuous numbers
+                yaxis_title="Total Items/Bags",
+                xaxis_title="Bag Number"
+            )
+            
+            # 4. Render to Streamlit dashboard
+            st.plotly_chart(fig, use_container_width=True)
             
     # ===================================================
     # NEW PAGE 4: LIVE WORKBAG SHEET ALLOCATION EDITOR (VIA ZAPIER)
