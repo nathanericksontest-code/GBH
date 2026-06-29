@@ -1,7 +1,21 @@
 import streamlit as st
 import pandas as pd
-import json
 import os
+import subprocess
+
+# Force Playwright to download its browser binaries if they are missing
+try:
+    # We check if the specific folder Playwright is complaining about exists
+    import playwright
+    # Run the installation command directly via subprocess to ensure it binds to the current user environment
+    if not os.path.exists(os.path.expanduser("~/.cache/ms-playwright")):
+        with st.spinner("🔧 First-time setup: Installing browser binaries (this takes ~30 seconds)..."):
+            subprocess.run(["python", "-m", "playwright", "install", "chromium"], check=True)
+except Exception as e:
+    st.error(f"Failed to initialize browser binaries: {e}")
+
+import json
+
 import datetime
 import plotly.express as px
 #from google.oauth2 import service_account
