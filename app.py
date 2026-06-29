@@ -195,7 +195,7 @@ else:
 
 st.sidebar.markdown("---")
 
-st.sidebar.markdown(f"Current data version: {global_store['current_version']}")
+filename_placeholder = st.sidebar.empty()
 
 # Fetch fresh copy from the cloud if authenticated
 any_page = ["📋 Live Transaction Ledger", "📊 Check-In Analytics Chart", "🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out", "📝 TEST"]
@@ -262,6 +262,8 @@ if is_authenticated:
             # Overwrite the global memory dictionary value
             global_store["global_df"] = pd.read_csv(uploaded_file,index_col=False)
             global_store["current_version"] = uploaded_file.name
+            filename_placeholder.markdown(f"Current data version: {global_store['current_version']}")
+
 
             # Clear Streamlit's UI cache so every active user drops old metrics 
             # and pulls the fresh dataframe from global_store instantly
