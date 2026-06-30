@@ -112,16 +112,16 @@ def run_zapier(df_zap,destination):
     
     st.markdown("#### 🔍 Step 1: Select Record to Modify")
     all_bags_list = sorted(df_zap[bag_label].dropna().unique().tolist())
-    selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list)
+    selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list,key=f"{destination}_selectbox")
         # Fetch target row data
     row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
     
     st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
     st.caption("Write in notes if does not match bag")
-    counter_name = st.text_input("Counter:", value=str("Please fill in"))
+    counter_name = st.text_input("Counter:", value=str("Please fill in"), key=f"{destination}_counter")
 
     st.markdown("---")
-    st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
+    st.markdown(f"#### 🛠️ Step 2: Update Data Fields", key=f"{destination}_update_data")
     
     with st.form("zapier_counter_form"):
         c_meta1, = st.columns(1)
@@ -144,7 +144,7 @@ def run_zapier(df_zap,destination):
                     except: current_qty_val = 0
                     ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=0, value=current_qty_val, step=1)
         
-        submit_changes = st.form_submit_button("🚀 Send Updates to Database")
+        submit_changes = st.form_submit_button("🚀 Send Updates to Database", key=f"{destination}_submit_btn")
     
     if submit_changes:
         # Build payload payload explicitly so Zapier receives flat text key pairs
@@ -165,12 +165,12 @@ def run_zapier(df_zap,destination):
         for ticket_name, qty in ticket_inputs.items():
             payload[f"ticket_{ticket_name}"] = qty
 
-        with st.spinner("Firing webhook to Database..."):
+        with st.spinner("Firing webhook to Database...", key=f"{destination}_firing"):
             try:
                 response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
                 
                 if response.status_code in [200, 201]:
-                    st.success("🎉 Sent to Database! Enter next bag.")
+                    st.success("🎉 Sent to Database! Enter next bag.", key=f"{destination}_success")
                 else:
                     st.error(f"Zapier rejected request with status code: {response.status_code}")
             except Exception as e:
