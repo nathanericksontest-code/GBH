@@ -148,11 +148,18 @@ def run_zapier(df_zap,destination):
     
     if submit_changes:
         # Build payload payload explicitly so Zapier receives flat text key pairs
+        
+        if destination == "Counted":
+            sheet_ID = 1555218451
+        elif destination == "Extras":
+            sheet_ID = 807176535
+        elif destination == "Auditor":
+            sheet_ID = 1901971005
         payload = {
             "bag_number": str(selected_bag_to_edit),
             "counter": counter_name,
             "notes": notes,
-            "worksheet": destination
+            "worksheet": sheet_ID
         }
         # Merge dynamic numbers directly into payload root
         for ticket_name, qty in ticket_inputs.items():
