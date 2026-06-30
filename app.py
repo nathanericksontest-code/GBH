@@ -123,7 +123,7 @@ def run_zapier(df_zap,destination):
         step_size = 1
 
 
-    #bag_label = "Bag Number" if "Bag Number" in df_zap.columns else df_zap.columns[0]
+    bag_label = "Bag Number" if "Bag Number" in df_zap.columns else df_zap.columns[0]
     
     st.markdown("#### 🔍 Step 1: Select Record to Modify")
 
