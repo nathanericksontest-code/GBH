@@ -107,6 +107,69 @@ def load_evt_data(df):
         df["Check-in Day Name"] = ""
     return df
 
+def run_zapier(df_zap,destination):
+    bag_label = "Bag Number" if "Bag Number" in df_zap.columns else df_zap.columns[0]
+    
+    st.markdown("#### 🔍 Step 1: Select Record to Modify")
+    all_bags_list = sorted(df_zap[bag_label].dropna().unique().tolist())
+    selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list)
+        # Fetch target row data
+    row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
+    
+    st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
+    st.caption("Write in notes if does not match bag")
+    counter_name = st.text_input("Counter:", value=str("Please fill in"))
+
+    st.markdown("---")
+    st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
+    
+    with st.form("zapier_counter_form"):
+        c_meta1, = st.columns(1)
+        with c_meta1:
+            notes = st.text_input("Notes", value=row_data.get("Notes",""))
+        
+        st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
+        
+        meta_cols = [bag_label, "Name", "Notes","Date","Day","Shift Start","Shift End","Gate"]
+        meta_cols_existing = [c for c in meta_cols if c in df_excel_counted.columns]
+        ticket_cols = TICKET_COLUMNS
+
+        ticket_inputs = {}
+        t_cols_chunks = [ticket_cols[x:x+4] for x in range(0, len(ticket_cols), 4)]
+        for chunk in t_cols_chunks:
+            form_cols = st.columns(len(chunk))
+            for idx, t_col in enumerate(chunk):
+                with form_cols[idx]:
+                    try: current_qty_val = int(row_data.get(t_col, 0))
+                    except: current_qty_val = 0
+                    ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=0, value=current_qty_val, step=1)
+        
+        submit_changes = st.form_submit_button("🚀 Send Updates to Database")
+    
+    if submit_changes:
+        # Build payload payload explicitly so Zapier receives flat text key pairs
+        payload = {
+            "bag_number": str(selected_bag_to_edit),
+            "counter": counter_name,
+            "notes": notes,
+            "worksheet": destination
+        }
+        # Merge dynamic numbers directly into payload root
+        for ticket_name, qty in ticket_inputs.items():
+            payload[f"ticket_{ticket_name}"] = qty
+
+        with st.spinner("Firing webhook to Database..."):
+            try:
+                response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
+                
+                if response.status_code in [200, 201]:
+                    st.success("🎉 Sent to Database! Enter next bag.")
+                else:
+                    st.error(f"Zapier rejected request with status code: {response.status_code}")
+            except Exception as e:
+                st.error(f"Failed to connect to Zapier webhook: {e}")
+
+
 @st.cache_data(ttl=10)
 def load_google_sheet_inventory(url):
     try:
@@ -939,7 +1002,6 @@ else:
     # NEW PAGE 4: LIVE WORKBAG SHEET ALLOCATION EDITOR (VIA ZAPIER)
     # =========================================================================
     elif page_selection == "📝 Count Stuff Out":
-        import requests  # Ensure requests is imported at the top of your script if it isn't
         st.subheader("📝 Live Shift & Bag Allocation Editor")
         
         if not is_authenticated:
@@ -947,67 +1009,9 @@ else:
         elif df_excel_counted.empty:
             st.warning("Database registry is empty or inaccessible.")
         else:
-            bag_label = "Bag Number" if "Bag Number" in df_excel_counted.columns else df_excel_counted.columns[0]
-            
-            st.markdown("#### 🔍 Step 1: Select Record to Modify")
-            all_bags_list = sorted(df_excel_counted[bag_label].dropna().unique().tolist())
-            selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list)
-             # Fetch target row data
-            row_data = df_excel_counted[df_excel_counted[bag_label] == selected_bag_to_edit].iloc[0]
-            
-            st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
-            st.caption("Write in notes if does not match bag")
-            counter_name = st.text_input("Counter:", value=str("Please fill in"))
+            run_zapier(df_excel_counted.copy(), "Counted")
 
-            st.markdown("---")
-            st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
-            
-            with st.form("zapier_counter_form"):
-                c_meta1, = st.columns(1)
-                with c_meta1:
-                    notes = st.text_input("Notes", value=row_data.get("Notes",""))
-                
-                st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
-                
-                meta_cols = [bag_label, "Name", "Notes","Date","Day","Shift Start","Shift End","Gate"]
-                meta_cols_existing = [c for c in meta_cols if c in df_excel_counted.columns]
-                ticket_cols = TICKET_COLUMNS
-
-                ticket_inputs = {}
-                t_cols_chunks = [ticket_cols[x:x+4] for x in range(0, len(ticket_cols), 4)]
-                for chunk in t_cols_chunks:
-                    form_cols = st.columns(len(chunk))
-                    for idx, t_col in enumerate(chunk):
-                        with form_cols[idx]:
-                            try: current_qty_val = int(row_data.get(t_col, 0))
-                            except: current_qty_val = 0
-                            ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=0, value=current_qty_val, step=1)
-                
-                submit_changes = st.form_submit_button("🚀 Send Updates to Database")
-            
-            if submit_changes:
-                # Build payload payload explicitly so Zapier receives flat text key pairs
-                payload = {
-                    "bag_number": str(selected_bag_to_edit),
-                    "counter": counter_name,
-                    "notes": notes,
-                }
-                # Merge dynamic numbers directly into payload root
-                for ticket_name, qty in ticket_inputs.items():
-                    payload[f"ticket_{ticket_name}"] = qty
-
-                with st.spinner("Firing webhook to Database..."):
-                    try:
-                        response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
-                        
-                        if response.status_code in [200, 201]:
-                            st.success("🎉 Sent to Database! Enter next bag.")
-                        else:
-                            st.error(f"Zapier rejected request with status code: {response.status_code}")
-                    except Exception as e:
-                        st.error(f"Failed to connect to Zapier webhook: {e}")
-
-            # =========================================================================
+    # =========================================================================
     # 📝 PAGE 5: AUTOMATED TICKET RE-TITLING & BAG RECONCILIATION ENGINE
     # =========================================================================
     elif page_selection == "📝 TEST":
