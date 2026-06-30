@@ -407,92 +407,93 @@ else:
 # =========================================================================
 if not is_authenticated:
     st.warning("🔒 Access Denied. Please authenticate via the sidebar panel.")
-elif df_raw.empty:
-    st.info("Waiting for 'live_tickets.json' to populate...")
 else:
-    df_raw["Check-in by"] = df_raw["Check-in by"].fillna("Not Checked In")
-    
-    df_raw["Broad Category Group"] = df_raw["Ticket name"].apply(categorized_label)
+    if not df_raw.empty:
+        df_raw["Check-in by"] = df_raw["Check-in by"].fillna("Not Checked In")
+        
+        df_raw["Broad Category Group"] = df_raw["Ticket name"].apply(categorized_label)
 
-    df_raw["Cash"] = np.where(df_raw["Payment source"] == "Cash payment", df_raw["Price"], 0)
-    
-    # Global variables required across analytical screens
-    start_filter, end_filter = datetime.datetime.now(), datetime.datetime.now()
-    filter_mode = "Broad Category Groups (Clean Summary)"
-    selected_items, selected_agents = [], []
+        df_raw["Cash"] = np.where(df_raw["Payment source"] == "Cash payment", df_raw["Price"], 0)
+        
+        # Global variables required across analytical screens
+        start_filter, end_filter = datetime.datetime.now(), datetime.datetime.now()
+        filter_mode = "Broad Category Groups (Clean Summary)"
+        selected_items, selected_agents = [], []
 
-    # Render filters only on diagnostic analytics pages
-    if page_selection in any_page:
-        with st.expander("🛠️ Global Dashboard Filter Settings", expanded=True):
-            f_col1, f_col2, f_col3 = st.columns([2, 1.5, 2])
-            with f_col1:
-                st.markdown("#### Ticket Clustering & Selection")
-                filter_mode = st.radio("Filter Hierarchy Mode:", ["Broad Category Groups (Clean Summary)", "Individual Names (Detailed)"], horizontal=True)
-                t_action = st.radio("Ticket Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
-                st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-                if filter_mode == "Broad Category Groups (Clean Summary)":
-                    unique_categories = sorted(df_raw["Broad Category Group"].unique().tolist())
-                    for i, cat in enumerate(unique_categories):
-                        # ⭐ THE TWEAK: Make the key unique using t_action and filter_mode
-                        unique_key = f"c_{i}_{filter_mode.lower()[0:4]}_{t_action.lower().replace(' ', '_')}"
-                        
-                        if st.checkbox(cat, value=(t_action == "Select All"), key=unique_key): 
-                            selected_items.append(cat)
-                else:
-                    all_tickets = sorted(df_raw["Ticket name"].dropna().unique().tolist())
-                    for i, ticket in enumerate(all_tickets):
-                        # ⭐ THE TWEAK: Make the key unique using t_action and filter_mode
-                        unique_key = f"t_{i}_{filter_mode.lower()[0:4]}_{t_action.lower().replace(' ', '_')}"
-                        
-                        if st.checkbox(ticket, value=(t_action == "Select All"), key=unique_key): 
-                            selected_items.append(ticket)
+        # Render filters only on diagnostic analytics pages
+        if page_selection in any_page:
+            with st.expander("🛠️ Global Dashboard Filter Settings", expanded=True):
+                f_col1, f_col2, f_col3 = st.columns([2, 1.5, 2])
+                with f_col1:
+                    st.markdown("#### Ticket Clustering & Selection")
+                    filter_mode = st.radio("Filter Hierarchy Mode:", ["Broad Category Groups (Clean Summary)", "Individual Names (Detailed)"], horizontal=True)
+                    t_action = st.radio("Ticket Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
+                    st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+                    if filter_mode == "Broad Category Groups (Clean Summary)":
+                        unique_categories = sorted(df_raw["Broad Category Group"].unique().tolist())
+                        for i, cat in enumerate(unique_categories):
+                            # ⭐ THE TWEAK: Make the key unique using t_action and filter_mode
+                            unique_key = f"c_{i}_{filter_mode.lower()[0:4]}_{t_action.lower().replace(' ', '_')}"
                             
-                st.markdown('</div>', unsafe_allow_html=True)
-            with f_col2:
-                st.markdown("#### Check-in Agents / Staff")
-                all_agents = sorted(df_raw["Check-in by"].unique().tolist())
-                a_action = st.radio("Agent Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
-                st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-                selected_agents = [] # Make sure this list is initialized right before the loop
-                for j, agent in enumerate(all_agents):
-                    # ⭐ THE TWEAK: Adding a_action to the key forces a total reset when the radio flips
-                    unique_key = f"a_{j}_{a_action.lower().replace(' ', '_')}"
-                    if st.checkbox(agent, value=(a_action == "Select All"), key=unique_key): 
-                        selected_agents.append(agent)
-                st.markdown('</div>', unsafe_allow_html=True)
-            with f_col3:
+                            if st.checkbox(cat, value=(t_action == "Select All"), key=unique_key): 
+                                selected_items.append(cat)
+                    else:
+                        all_tickets = sorted(df_raw["Ticket name"].dropna().unique().tolist())
+                        for i, ticket in enumerate(all_tickets):
+                            # ⭐ THE TWEAK: Make the key unique using t_action and filter_mode
+                            unique_key = f"t_{i}_{filter_mode.lower()[0:4]}_{t_action.lower().replace(' ', '_')}"
+                            
+                            if st.checkbox(ticket, value=(t_action == "Select All"), key=unique_key): 
+                                selected_items.append(ticket)
+                                
+                    st.markdown('</div>', unsafe_allow_html=True)
+                with f_col2:
+                    st.markdown("#### Check-in Agents / Staff")
+                    all_agents = sorted(df_raw["Check-in by"].unique().tolist())
+                    a_action = st.radio("Agent Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
+                    st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+                    selected_agents = [] # Make sure this list is initialized right before the loop
+                    for j, agent in enumerate(all_agents):
+                        # ⭐ THE TWEAK: Adding a_action to the key forces a total reset when the radio flips
+                        unique_key = f"a_{j}_{a_action.lower().replace(' ', '_')}"
+                        if st.checkbox(agent, value=(a_action == "Select All"), key=unique_key): 
+                            selected_agents.append(agent)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                with f_col3:
 
-                st.markdown("#### Status Category")
-                all_status = sorted(df_raw["Status"].unique().tolist())
-                s_action = st.radio("Status Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
-                st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-                selected_status = [] # Make sure this list is initialized right before the loop
-                for j, status_type in enumerate(all_status):
-                    # ⭐ THE TWEAK: Adding a_action to the key forces a total reset when the radio flips
-                    unique_key = f"dc_{j}_{s_action.lower().replace(' ', '_')}"
-                    if st.checkbox(status_type, value=(s_action == "Select All"), key=unique_key): 
-                        selected_status.append(status_type)
-                st.markdown('</div>', unsafe_allow_html=True)
+                    st.markdown("#### Status Category")
+                    all_status = sorted(df_raw["Status"].unique().tolist())
+                    s_action = st.radio("Status Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
+                    st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+                    selected_status = [] # Make sure this list is initialized right before the loop
+                    for j, status_type in enumerate(all_status):
+                        # ⭐ THE TWEAK: Adding a_action to the key forces a total reset when the radio flips
+                        unique_key = f"dc_{j}_{s_action.lower().replace(' ', '_')}"
+                        if st.checkbox(status_type, value=(s_action == "Select All"), key=unique_key): 
+                            selected_status.append(status_type)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
-                #st.markdown("#### Global Datetime Bounds")
-                #valid_times = df_raw["Check-in time_parsed"].dropna()
-                #min_time = valid_times.min().replace(second=0, microsecond=0).to_pydatetime() if not valid_times.empty else pd.to_datetime("2025-01-01 00:00:00").to_pydatetime()
-                #max_time = valid_times.max().replace(second=0, microsecond=0).to_pydatetime() if not valid_times.empty else pd.to_datetime("2026-12-31 23:59:00").to_pydatetime()
-                #if min_time == max_time: max_time += datetime.timedelta(minutes=1)
-                #start_filter, end_filter = st.slider("Operational window:", min_value=min_time, max_value=max_time, value=(min_time, max_time), format="MM/DD HH:mm")
+                    #st.markdown("#### Global Datetime Bounds")
+                    #valid_times = df_raw["Check-in time_parsed"].dropna()
+                    #min_time = valid_times.min().replace(second=0, microsecond=0).to_pydatetime() if not valid_times.empty else pd.to_datetime("2025-01-01 00:00:00").to_pydatetime()
+                    #max_time = valid_times.max().replace(second=0, microsecond=0).to_pydatetime() if not valid_times.empty else pd.to_datetime("2026-12-31 23:59:00").to_pydatetime()
+                    #if min_time == max_time: max_time += datetime.timedelta(minutes=1)
+                    #start_filter, end_filter = st.slider("Operational window:", min_value=min_time, max_value=max_time, value=(min_time, max_time), format="MM/DD HH:mm")
 
-            ticket_mask = df_raw["Broad Category Group"].isin(selected_items) if filter_mode == "Broad Category Groups (Clean Summary)" else df_raw["Ticket name"].isin(selected_items)
-            filtered_df = df_raw[ticket_mask & (df_raw["Check-in by"].isin(selected_agents)) & (df_raw["Status"].isin(selected_status))].copy() #& (df_raw["Check-in time_parsed"] >= start_filter) & (df_raw["Check-in time_parsed"] <= end_filter)
-            
-            total_count = len(df_raw)
-            status_count = (df_raw["Status"].isin(selected_status)).sum()
-            filtered_count = len(filtered_df)
-            st.markdown("### Operational KPIs")
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Total Records", f"{total_count:,}")
-            m2.metric("Total In Status", f"{status_count:,}")
-            m3.metric("Total Filtered", f"{filtered_count:,}")
-            st.markdown("---")
+                ticket_mask = df_raw["Broad Category Group"].isin(selected_items) if filter_mode == "Broad Category Groups (Clean Summary)" else df_raw["Ticket name"].isin(selected_items)
+                filtered_df = df_raw[ticket_mask & (df_raw["Check-in by"].isin(selected_agents)) & (df_raw["Status"].isin(selected_status))].copy() #& (df_raw["Check-in time_parsed"] >= start_filter) & (df_raw["Check-in time_parsed"] <= end_filter)
+                
+                total_count = len(df_raw)
+                status_count = (df_raw["Status"].isin(selected_status)).sum()
+                filtered_count = len(filtered_df)
+                st.markdown("### Operational KPIs")
+                m1, m2, m3 = st.columns(3)
+                m1.metric("Total Records", f"{total_count:,}")
+                m2.metric("Total In Status", f"{status_count:,}")
+                m3.metric("Total Filtered", f"{filtered_count:,}")
+                st.markdown("---")
+    else:
+        st.info("Waiting for 'live_tickets.json' to populate...")
 
     # =========================================================================
     # RENDER SELECTED PAGE SWITCH BLOCKS
