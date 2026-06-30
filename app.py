@@ -31,7 +31,6 @@ try:
     raw_columns = os.environ.get("TICKET_COLUMNS")
     TICKET_COLUMNS = json.loads(raw_columns)
     DAY_TO_DATE_MAPPING = os.environ.get("DAY_TO_DATE_MAPPING")
-    GOOGLE_SHEET_UPDATE_DATA_URL = os.environ.get("GOOGLE_SHEET_UPDATE_DATA_URL")
     ZAPIER_AUDITOR_HOOK_URL = os.environ.get("ZAPIER_AUDITOR_HOOK_URL")
     ZAPIER_COUNTER_HOOK_URL = os.environ.get("ZAPIER_COUNTER_HOOK_URL")
     ZAPIER_EXTRAS_HOOK_URL = os.environ.get("ZAPIER_EXTRAS_HOOK_URL")
@@ -43,7 +42,6 @@ except:
     APP_PASSWORD = st.secrets.get("APP_PASSWORD")
     TICKET_COLUMNS = st.secrets.get("TICKET_COLUMNS")
     DAY_TO_DATE_MAPPING = st.secrets.get("DAY_TO_DATE_MAPPING")
-    GOOGLE_SHEET_UPDATE_DATA_URL = st.secrets["GOOGLE_SHEET_UPDATE_DATA_URL"]
     ZAPIER_AUDITOR_HOOK_URL = st.secrets["ZAPIER_AUDITOR_HOOK_URL"]
     ZAPIER_COUNTER_HOOK_URL = st.secrets["ZAPIER_COUNTER_HOOK_URL"]
     ZAPIER_EXTRAS_HOOK_URL = st.secrets["ZAPIER_EXTRAS_HOOK_URL"]
