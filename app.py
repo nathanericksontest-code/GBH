@@ -691,33 +691,32 @@ else:
 
             all_bags = sorted(df_excel_counted["Bag Number"].unique().tolist())
             st.markdown("### Auditor Adjustments")
-            grid_rows = []
-            for bag in all_bags:
+            if "wide_adjustment_df" not in st.session_state:
+                # Create the base dictionary template
+                template_data = {"Bag Number": all_bags}
+                
+                # Initialize every ticket type column with zeros
                 for ticket in TICKET_COLUMNS:
-                    grid_rows.append({
-                        "Bag Number": bag,
-                        "Ticket Type": ticket,
-                        "Auditor Adjustment": 0  # Starts with 0 in all boxes
-                    })
-            st.session_state.adjustment_grid = pd.DataFrame(grid_rows)
+                    template_data[ticket] = [0] * len(all_bags)
+                    
+                st.session_state.wide_adjustment_df = pd.DataFrame(template_data)
 
-            edited_grid = st.data_editor(
-                st.session_state.adjustment_grid,
-                disabled=["Bag Number", "Ticket Type"], # Prevents auditors from editing reference keys
+            st.markdown("#### Input Corrections")
+            st.caption("Double-click any cell to input adjustments directly into the matrix.")
+
+            # 3. Render the interactive wide table matrix
+            edited_matrix = st.data_editor(
+                st.session_state.wide_adjustment_df,
+                disabled=["Bag Number"], # Lock down only the bag numbers so they remain as clean row labels
                 hide_index=True,
                 use_container_width=True,
-                key="bulk_editor"
+                key="wide_bulk_editor"
             )
 
+            # 4. Handle Save & Submit
             if st.button("📤 Submit Adjustments", type="primary"):
-                st.session_state.adjustment_grid = edited_grid.copy()
-                st.success("🎉 All bag modifications successfully updated in memory!")
-                
-                # Optional: Filter out rows where the auditor actually changed something from 0
-                active_changes = edited_grid[edited_grid["Auditor Adjustment"] != 0]
-                if not active_changes.empty:
-                    st.write("Modified Items:", active_changes)
-
+                st.session_state.wide_adjustment_df = edited_matrix.copy()
+                st.success("🎉 Matrix adjustments committed successfully!")
 
             st.markdown("### Audit")
             st.markdown("###### Negative values indicate missing wristbands/stickers")
