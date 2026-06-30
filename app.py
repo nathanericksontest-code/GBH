@@ -499,11 +499,12 @@ else:
     # RENDER SELECTED PAGE SWITCH BLOCKS
     # =========================================================================
     if page_selection == "📋 Live Transaction Ledger":
-        if not df_raw.empty:
             st.subheader("Live Operational Records View")
             
             if not is_authenticated:
                 st.warning("🔒 Access Denied. Please authenticate via the sidebar panel.")
+            elif df_raw.empty:
+                st.warning("No live transaction ledger data found to process.")
             else:
                 col1, col2 = st.columns(2)
                 with col1:
@@ -565,11 +566,12 @@ else:
 
 
     elif page_selection == "📊 Check-In Analytics Chart":
-        if not df_raw.empty:
             st.subheader("Check-In Velocity Timeline")
             
             if not is_authenticated:
                 st.warning("🔒 Access Denied. Please authenticate via the sidebar panel.")
+            elif df_raw.empty:
+                st.warning("No live transaction ledger data found to process.")
             else:
                 st.write("Analytics View")
                 # (...Keep original Page 2 Charts layout code intact...)
@@ -605,11 +607,12 @@ else:
     ######## Audit Page ###########
     #################################
     elif page_selection == "🎒 Per-Bag Inventory Audit":
-        if not df_raw.empty:
             if not is_authenticated:
                 st.warning("🔒 Access Denied. Input the correct password in the sidebar.")
             elif df_excel_registry.empty:
                 st.warning("Could not fetch data from Google Sheet link.")
+            elif df_raw.empty:
+                st.warning("No live transaction ledger data found to process.")
             else:
                 filtered_df = filtered_df.copy()
                 filt_agents = sorted(filtered_df["Check-in by"].unique().tolist())
