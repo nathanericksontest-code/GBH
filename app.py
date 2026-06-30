@@ -782,8 +782,11 @@ else:
 
             ######## AUDITOR ADJUSTMENTS ###########
 
-            st.markdown("### Auditor Adjustments")
-            run_zapier(df_excel_audit.copy(), "Auditor")
+            with st.expander("### Auditor Adjustments"):
+                with st.expander("#### Extras"):
+                    run_zapier(df_excel_extras.copy(), "Extras")
+                with st.expander("#### Edits"):
+                    run_zapier(df_excel_audit.copy(), "Auditor")
 
             #all_bags = sorted(df_excel_counted["Bag Number"].unique().tolist())
             # if "wide_adjustment_df" not in st.session_state:
