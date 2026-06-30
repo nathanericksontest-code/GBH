@@ -25,7 +25,8 @@ load_dotenv()
 try:
     GOOGLE_SHEET_COUNTER_URL = os.environ.get("GOOGLE_SHEET_COUNTER_URL")
     GOOGLE_SHEET_PREPACK_URL = os.environ.get("GOOGLE_SHEET_PREPACK_URL")
-    GOOGLE_SHEET_DATA_URL = os.environ.get("GOOGLE_SHEET_DATA_URL")
+    GOOGLE_SHEET_EXTRAS_URL = os.environ.get("GOOGLE_SHEET_EXTRAS_URL")
+    GOOGLE_SHEET_AUDITOR_URL = os.environ.get("GOOGLE_SHEET_AUDITOR_URL")
     APP_PASSWORD = os.environ.get("APP_PASSWORD")
     raw_columns = os.environ.get("TICKET_COLUMNS")
     TICKET_COLUMNS = json.loads(raw_columns)
@@ -37,7 +38,8 @@ try:
 except:
     GOOGLE_SHEET_COUNTER_URL = st.secrets.get("GOOGLE_SHEET_COUNTER_URL")
     GOOGLE_SHEET_PREPACK_URL = st.secrets.get("GOOGLE_SHEET_PREPACK_URL")
-    GOOGLE_SHEET_DATA_URL = st.secrets.get("GOOGLE_SHEET_DATA_URL")
+    GOOGLE_SHEET_EXTRAS_URL = st.secrets.get("GOOGLE_SHEET_EXTRAS_URL")
+    GOOGLE_SHEET_AUDITOR_URL = st.secrets.get("GOOGLE_SHEET_AUDITOR_URL")
     APP_PASSWORD = st.secrets.get("APP_PASSWORD")
     TICKET_COLUMNS = st.secrets.get("TICKET_COLUMNS")
     DAY_TO_DATE_MAPPING = st.secrets.get("DAY_TO_DATE_MAPPING")
@@ -342,12 +344,13 @@ if is_authenticated:
     if not df_raw.empty:
         filename_placeholder.markdown(f"Last uploaded version: {global_store['current_version']}")
 
-    #df_raw = load_google_sheet_inventory(GOOGLE_SHEET_DATA_URL)
     df_raw = load_evt_data(df_raw)
 
 if is_authenticated and page_selection in ["🎒 Per-Bag Inventory Audit", "📝 Count Stuff Out","📝 TEST"]:
     df_excel_registry = load_google_sheet_inventory(GOOGLE_SHEET_PREPACK_URL)
     df_excel_counted = load_google_sheet_inventory(GOOGLE_SHEET_COUNTER_URL)
+    df_excel_extras = load_google_sheet_inventory(GOOGLE_SHEET_EXTRAS_URL)
+    df_excel_audit = load_google_sheet_inventory(GOOGLE_SHEET_AUDITOR_URL)
 else:
     st.session_state.download_file_path = ""
     st.session_state.adjustment_df = pd.DataFrame()
@@ -782,66 +785,7 @@ else:
             ######## AUDITOR ADJUSTMENTS ###########
 
             st.markdown("### Auditor Adjustments")
-            bag_label = "Bag Number" if "Bag Number" in df_excel_registry.columns else df_excel_registry.columns[0]
-            
-            st.markdown("#### 🔍 Step 1: Select Record to Modify")
-            all_bags_list = sorted(df_excel_registry[bag_label].dropna().unique().tolist())
-            selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list)
-             # Fetch target row data
-            row_data = df_excel_registry[df_excel_registry[bag_label] == selected_bag_to_edit].iloc[0]
-            
-            st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
-            st.caption("Write in notes if does not match bag")
-            counter_name = st.text_input("Counter:", value=str("Please fill in"))
-
-            st.markdown("---")
-            st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
-            
-            with st.form("zapier_modifier_form"):
-                c_meta1 = st.columns(1)
-                with c_meta1:
-                    notes = st.text_input("Notes", value=row_data.get("Notes",""))
-                
-                st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
-                
-                meta_cols = [bag_label, "Name", "Notes","Date","Day","Shift Start","Shift End","Gate"]
-                meta_cols_existing = [c for c in meta_cols if c in df_excel_registry.columns]
-                ticket_cols = TICKET_COLUMNS
-
-                ticket_inputs = {}
-                t_cols_chunks = [ticket_cols[x:x+4] for x in range(0, len(ticket_cols), 4)]
-                for chunk in t_cols_chunks:
-                    form_cols = st.columns(len(chunk))
-                    for idx, t_col in enumerate(chunk):
-                        with form_cols[idx]:
-                            try: current_qty_val = int(row_data.get(t_col, 0))
-                            except: current_qty_val = 0
-                            ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=0, value=current_qty_val, step=1)
-                
-                submit_changes = st.form_submit_button("🚀 Send Updates to Database")
-            
-            if submit_changes:
-                # Build payload payload explicitly so Zapier receives flat text key pairs
-                payload = {
-                    "bag_number": str(selected_bag_to_edit),
-                    "counter": counter_name,
-                    "notes": notes,
-                }
-                # Merge dynamic numbers directly into payload root
-                for ticket_name, qty in ticket_inputs.items():
-                    payload[f"ticket_{ticket_name}"] = qty
-
-                with st.spinner("Firing webhook to Database..."):
-                    try:
-                        response = requests.post(ZAPIER_AUDITOR_HOOK_URL, json=payload)
-                        
-                        if response.status_code in [200, 201]:
-                            st.success("🎉 Sent to Database! Enter next bag.")
-                        else:
-                            st.error(f"Zapier rejected request with status code: {response.status_code}")
-                    except Exception as e:
-                        st.error(f"Failed to connect to Zapier webhook: {e}")
-
+            run_zapier(df_excel_audit.copy(), "Auditor")
 
             #all_bags = sorted(df_excel_counted["Bag Number"].unique().tolist())
             # if "wide_adjustment_df" not in st.session_state:
