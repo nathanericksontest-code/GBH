@@ -123,20 +123,53 @@ def run_zapier(df_zap,destination):
         step_size = 1
 
 
-    bag_label = "Bag Number" if "Bag Number" in df_zap.columns else df_zap.columns[0]
+    #bag_label = "Bag Number" if "Bag Number" in df_zap.columns else df_zap.columns[0]
     
     st.markdown("#### 🔍 Step 1: Select Record to Modify")
-    all_bags_list = sorted(df_zap[bag_label].dropna().unique().tolist())
-    selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list,key=f"{destination}_selectbox")
-        # Fetch target row data
-    row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
-    
-    st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
-    st.caption("Write in notes if does not match bag")
-    counter_name = st.text_input("Counter:", value=str("Please fill in"), key=f"{destination}_counter")
 
-    st.markdown("---")
+    # Get clean options list
+    all_bags_list = sorted(df_zap[bag_label].dropna().unique().tolist())
+
+    # 1. Use columns to pull the selectbox, name, and input onto a single compact row
+    col1, col2, col3 = st.columns([1.2, 1.5, 1.3])
+
+    with col1:
+        selected_bag_to_edit = st.selectbox(
+            "Bag Number / ID:",  # Shortened label to save vertical space
+            options=all_bags_list,
+            key=f"{destination}_selectbox"
+        )
+
+    # Fetch target row data safely
+    row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
+    volunteer_name = row_data.get("Name", "none")
+
+    with col2:
+        # Use standard markdown instead of subheader to drop the large padding blocks
+        st.markdown(f"**Volunteer Name:**\n### {volunteer_name}")
+        st.caption("📝 Write in notes if mismatch occurs")
+
+    with col3:
+        counter_name = st.text_input(
+            "Counter Staff Assignment:", 
+            value="Please fill in", 
+            key=f"{destination}_counter"
+        )
+
+    # 2. Tightened transition directly into Step 2 (Removed the heavy st.markdown("---") rule line)
     st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
+    # st.markdown("#### 🔍 Step 1: Select Record to Modify")
+    # all_bags_list = sorted(df_zap[bag_label].dropna().unique().tolist())
+    # selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list,key=f"{destination}_selectbox")
+    #     # Fetch target row data
+    # row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
+    
+    # st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
+    # st.caption("Write in notes if does not match bag")
+    # counter_name = st.text_input("Counter:", value=str("Please fill in"), key=f"{destination}_counter")
+
+    # st.markdown("---")
+    # st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
     
     with st.form(f"{destination}_form"):
         c_meta1, = st.columns(1)
