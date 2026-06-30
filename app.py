@@ -700,6 +700,8 @@ else:
                     template_data[ticket] = [0] * len(all_bags)
                     
                 df_template_data = pd.DataFrame(template_data)
+            else:
+                df_template_data = st.session_state.wide_adjustment_df
 
             st.markdown("#### Input Corrections")
             st.caption("Double-click any cell to input adjustments directly into the matrix.")
