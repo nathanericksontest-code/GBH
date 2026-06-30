@@ -123,7 +123,7 @@ def run_zapier(df_zap,destination):
     st.markdown("---")
     st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
     
-    with st.form("zapier_counter_form", key=f"{destination}_form"):
+    with st.form(f"{destination}_form"):
         c_meta1, = st.columns(1)
         with c_meta1:
             notes = st.text_input("Notes", value=row_data.get("Notes",""))
