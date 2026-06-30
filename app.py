@@ -701,14 +701,22 @@ else:
                     })
             st.session_state.adjustment_grid = pd.DataFrame(grid_rows)
 
-            edited_df = st.data_editor(
+            edited_grid = st.data_editor(
                 st.session_state.adjustment_df,
-                disabled=["Bag Number", "Ticket Type", "System Count"], # Prevents auditors from editing reference keys
+                disabled=["Bag Number", "Ticket Type"], # Prevents auditors from editing reference keys
                 hide_index=True,
                 use_container_width=True,
-                key="editor_instance"
+                key="bulk_editor"
             )
 
+            if st.button("📤 Submit Adjustments", type="primary"):
+                st.session_state.adjustment_grid = edited_grid.copy()
+                st.success("🎉 All bag modifications successfully updated in memory!")
+                
+                # Optional: Filter out rows where the auditor actually changed something from 0
+                active_changes = edited_grid[edited_grid["Auditor Adjustment"] != 0]
+                if not active_changes.empty:
+                    st.write("Modified Items:", active_changes)
 
 
             st.markdown("### Audit")
