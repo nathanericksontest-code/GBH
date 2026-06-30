@@ -687,6 +687,17 @@ else:
             st.markdown("### Counted")
             st.dataframe(df_excel_counted, width='stretch', hide_index=True)
             
+
+            edited_df = st.data_editor(
+                st.session_state.adjustment_df,
+                disabled=["Bag Number", "Ticket Type", "System Count"], # Prevents auditors from editing reference keys
+                hide_index=True,
+                use_container_width=True,
+                key="editor_instance"
+            )
+
+
+
             st.markdown("### Audit")
             st.markdown("###### Negative values indicate missing wristbands/stickers")
             ticket_cols = TICKET_COLUMNS
