@@ -689,6 +689,18 @@ else:
             st.dataframe(df_excel_counted, width='stretch', hide_index=True)
             
 
+            all_bags = sorted(df_excel_registry["Bag Number"].unique().tolist())
+            st.markdown("### Auditor Adjustments")
+            grid_rows = []
+            for bag in all_bags:
+                for ticket in TICKET_COLUMNS:
+                    grid_rows.append({
+                        "Bag Number": bag,
+                        "Ticket Type": ticket,
+                        "Auditor Adjustment": 0  # Starts with 0 in all boxes
+                    })
+            st.session_state.adjustment_grid = pd.DataFrame(grid_rows)
+
             edited_df = st.data_editor(
                 st.session_state.adjustment_df,
                 disabled=["Bag Number", "Ticket Type", "System Count"], # Prevents auditors from editing reference keys
