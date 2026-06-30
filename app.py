@@ -844,22 +844,26 @@ else:
                 df_pre = df_excel_registry.copy()
                 df_cnt = df_excel_counted.copy()
                 df_evt = df_bounded_output.copy()
-                df_add = st.session_state.wide_adjustment_df.copy()
+                df_ext = df_excel_extras.copy()
+                df_aud = df_excel_audit.copy()
                 
                 df_pre["Bag Number"] = df_pre["Bag Number"].astype(str).str.strip()
                 df_cnt["Bag Number"] = df_cnt["Bag Number"].astype(str).str.strip()
                 df_evt["Bag Number"] = df_evt["Bag Number"].astype(str).str.strip()
-                df_add["Bag Number"] = df_add["Bag Number"].astype(str).str.strip()
+                df_aud["Bag Number"] = df_aud["Bag Number"].astype(str).str.strip()
+                df_ext["Bag Number"] = df_ext["Bag Number"].astype(str).str.strip()
                 
                 # 2. Extract and align dataframes by setting Bag Number as the layout index
                 # Only pull ticket columns that actually exist in both sheets to prevent NaN crashes
-                valid_cols = [col for col in ticket_cols if col in df_pre.columns and col in df_evt.columns and col in df_cnt.columns and col in df_add.columns]
+                valid_cols = [col for col in ticket_cols if col in df_pre.columns and col in df_evt.columns and col in df_cnt.columns and col in df_aud.columns]
                 
                 if valid_cols:
                     pre_matrix = df_pre.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
                     cnt_matrix = df_cnt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
                     evt_matrix = df_evt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
-                    add_matrix = df_add.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+                    aud_matrix = df_aud.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+                    ext_matrix = df_ext.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+
 
                     # 3. Align both frames completely on matching Bag Numbers
                     # This keeps all bags from both sheets and aligns their structures
@@ -867,10 +871,11 @@ else:
                     pre_matrix = pre_matrix.reindex(all_bags, fill_value=0)
                     cnt_matrix = cnt_matrix.reindex(all_bags, fill_value=0)
                     evt_matrix = evt_matrix.reindex(all_bags, fill_value=0)
-                    add_matrix = add_matrix.reindex(all_bags, fill_value=0)
+                    aud_matrix = aud_matrix.reindex(all_bags, fill_value=0)
+                    ext_matrix = ext_matrix.reindex(all_bags, fill_value=0)
 
                     # 4. Perform math subtraction (Negative means missing)
-                    audit_matrix = cnt_matrix + evt_matrix - add_matrix - pre_matrix 
+                    audit_matrix = cnt_matrix + evt_matrix - aud_matrix - pre_matrix - ext_matrix 
                     
                     # 5. Format it back into a beautiful UI dataframe view
                     df_audit = audit_matrix.reset_index()
