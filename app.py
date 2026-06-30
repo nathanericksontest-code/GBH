@@ -107,7 +107,7 @@ def load_evt_data(df):
         df["Check-in Day Name"] = ""
     return df
 
-def run_zapier(df_zap,destination):
+def run_zapier(df_zap,df_prepack,destination):
     
     if destination == "Counted":
         sheet_ID = 1555218451
@@ -142,7 +142,8 @@ def run_zapier(df_zap,destination):
 
     # Fetch target row data safely
     row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
-    volunteer_name = row_data.get("Name", "none")
+    prepack_row_data = df_prepack[df_prepack[bag_label] == selected_bag_to_edit].iloc[0]
+    volunteer_name = prepack_row_data.get("Name", "none")
 
     with col2:
         # Use standard markdown instead of subheader to drop the large padding blocks
@@ -827,11 +828,11 @@ else:
 
             with st.expander("Auditor Adjustments"):
                 with st.expander("Re-count"):
-                    run_zapier(df_excel_counted.copy(), "Counted")
+                    run_zapier(df_excel_counted.copy(),df_excel_registry.copy(), "Counted")
                 with st.expander("Extras"):
-                    run_zapier(df_excel_extras.copy(), "Extras")
+                    run_zapier(df_excel_extras.copy(), df_excel_registry.copy(),"Extras")
                 with st.expander("Edits"):
-                    run_zapier(df_excel_audit.copy(), "Auditor")
+                    run_zapier(df_excel_audit.copy(), df_excel_registry.copy(),"Auditor")
 
             #all_bags = sorted(df_excel_counted["Bag Number"].unique().tolist())
             # if "wide_adjustment_df" not in st.session_state:
@@ -1011,7 +1012,7 @@ else:
         elif df_excel_counted.empty:
             st.warning("Database registry is empty or inaccessible.")
         else:
-            run_zapier(df_excel_counted.copy(), "Counted")
+            run_zapier(df_excel_counted.copy(),df_excel_registry.copy(), "Counted")
 
     # =========================================================================
     # 📝 PAGE 5: AUTOMATED TICKET RE-TITLING & BAG RECONCILIATION ENGINE
