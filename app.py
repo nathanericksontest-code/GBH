@@ -944,16 +944,16 @@ else:
         
         if not is_authenticated:
             st.warning("🔒 Access Denied. Please authenticate via the sidebar panel.")
-        elif df_excel_registry.empty:
+        elif df_excel_counted.empty:
             st.warning("Database registry is empty or inaccessible.")
         else:
-            bag_label = "Bag Number" if "Bag Number" in df_excel_registry.columns else df_excel_registry.columns[0]
+            bag_label = "Bag Number" if "Bag Number" in df_excel_counted.columns else df_excel_counted.columns[0]
             
             st.markdown("#### 🔍 Step 1: Select Record to Modify")
-            all_bags_list = sorted(df_excel_registry[bag_label].dropna().unique().tolist())
+            all_bags_list = sorted(df_excel_counted[bag_label].dropna().unique().tolist())
             selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list)
              # Fetch target row data
-            row_data = df_excel_registry[df_excel_registry[bag_label] == selected_bag_to_edit].iloc[0]
+            row_data = df_excel_counted[df_excel_counted[bag_label] == selected_bag_to_edit].iloc[0]
             
             st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
             st.caption("Write in notes if does not match bag")
@@ -962,7 +962,7 @@ else:
             st.markdown("---")
             st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
             
-            with st.form("zapier_modifier_form"):
+            with st.form("zapier_counter_form"):
                 c_meta1, = st.columns(1)
                 with c_meta1:
                     notes = st.text_input("Notes", value=row_data.get("Notes",""))
@@ -970,7 +970,7 @@ else:
                 st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
                 
                 meta_cols = [bag_label, "Name", "Notes","Date","Day","Shift Start","Shift End","Gate"]
-                meta_cols_existing = [c for c in meta_cols if c in df_excel_registry.columns]
+                meta_cols_existing = [c for c in meta_cols if c in df_excel_counted.columns]
                 ticket_cols = TICKET_COLUMNS
 
                 ticket_inputs = {}
