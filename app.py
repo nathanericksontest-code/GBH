@@ -108,6 +108,21 @@ def load_evt_data(df):
     return df
 
 def run_zapier(df_zap,destination):
+    
+    if destination == "Counted":
+        sheet_ID = 1555218451
+        min_val = 0
+        step_size = 1
+    elif destination == "Extras":
+        sheet_ID = 807176535
+        min_val = -100
+        step_size = 10
+    elif destination == "Auditor":
+        sheet_ID = 1901971005
+        min_val = -100
+        step_size = 1
+
+
     bag_label = "Bag Number" if "Bag Number" in df_zap.columns else df_zap.columns[0]
     
     st.markdown("#### 🔍 Step 1: Select Record to Modify")
@@ -142,19 +157,14 @@ def run_zapier(df_zap,destination):
                 with form_cols[idx]:
                     try: current_qty_val = int(row_data.get(t_col, 0))
                     except: current_qty_val = 0
-                    ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=0, value=current_qty_val, step=1)
+                    ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=min_val, value=current_qty_val, step=step_size)
         
         submit_changes = st.form_submit_button("🚀 Send Updates to Database", key=f"{destination}_submit_btn")
     
     if submit_changes:
         # Build payload payload explicitly so Zapier receives flat text key pairs
         
-        if destination == "Counted":
-            sheet_ID = 1555218451
-        elif destination == "Extras":
-            sheet_ID = 807176535
-        elif destination == "Auditor":
-            sheet_ID = 1901971005
+
         payload = {
             "bag_number": str(selected_bag_to_edit),
             "counter": counter_name,
