@@ -31,6 +31,9 @@ try:
     TICKET_COLUMNS = json.loads(raw_columns)
     DAY_TO_DATE_MAPPING = os.environ.get("DAY_TO_DATE_MAPPING")
     GOOGLE_SHEET_UPDATE_DATA_URL = os.environ.get("GOOGLE_SHEET_UPDATE_DATA_URL")
+    ZAPIER_AUDITOR_HOOK_URL = os.environ.get("ZAPIER_AUDITOR_HOOK_URL")
+    ZAPIER_COUNTER_HOOK_URL = os.environ.get("ZAPIER_COUNTER_HOOK_URL")
+    ZAPIER_EXTRAS_HOOK_URL = os.environ.get("ZAPIER_EXTRAS_HOOK_URL")
 except:
     GOOGLE_SHEET_COUNTER_URL = st.secrets.get("GOOGLE_SHEET_COUNTER_URL")
     GOOGLE_SHEET_PREPACK_URL = st.secrets.get("GOOGLE_SHEET_PREPACK_URL")
@@ -39,6 +42,9 @@ except:
     TICKET_COLUMNS = st.secrets.get("TICKET_COLUMNS")
     DAY_TO_DATE_MAPPING = st.secrets.get("DAY_TO_DATE_MAPPING")
     GOOGLE_SHEET_UPDATE_DATA_URL = st.secrets["GOOGLE_SHEET_UPDATE_DATA_URL"]
+    ZAPIER_AUDITOR_HOOK_URL = st.secrets["ZAPIER_AUDITOR_HOOK_URL"]
+    ZAPIER_COUNTER_HOOK_URL = st.secrets["ZAPIER_COUNTER_HOOK_URL"]
+    ZAPIER_EXTRAS_HOOK_URL = st.secrets["ZAPIER_EXTRAS_HOOK_URL"]
 
 
 # 1. Create a single cached resource that acts as our global storage container
@@ -468,6 +474,12 @@ else:
                 st.plotly_chart(fig, width='stretch')
 
 
+
+
+
+    #################################
+    ######## Audit Page ###########
+    #################################
     elif page_selection == "🎒 Per-Bag Inventory Audit":
 
         if not is_authenticated:
@@ -520,6 +532,9 @@ else:
             m1.metric("Number Attributed to People with PrePack Bag: ", f"{count_in_people_with_bags:,}")
             m2.metric("Number With no Matching Name: ", f"{(filtered_count-count_in_people_with_bags):,}")
             
+                #################################
+             ######## PrePack ###########
+                #################################
             st.markdown("### PrePack")
             st.dataframe(df_excel_registry, width='stretch', hide_index=True)
             
@@ -571,7 +586,9 @@ else:
                 else:
                     st.warning("Eventeny live transaction data ledger is currently unavailable.")
             
-
+                #################################
+             ######## SHIFT BOUNDED EVENTENY ###########
+                #################################
             st.markdown("### 🕒 Shift-Bounded Eventeny Scan Totals")
 
             if not df_raw.empty and not df_excel_registry.empty:
@@ -685,41 +702,112 @@ else:
                 st.markdown(f"**Itemized Scan Breakdown:** {itemized_breakdown}")
 
 
+                #################################
+             ######## COUNTED ###########
+                #################################
             st.markdown("### Counted")
             st.dataframe(df_excel_counted, width='stretch', hide_index=True)
             
 
-            all_bags = sorted(df_excel_counted["Bag Number"].unique().tolist())
+            ######## AUDITOR ADJUSTMENTS ###########
+
             st.markdown("### Auditor Adjustments")
-            if "wide_adjustment_df" not in st.session_state:
-                # Create the base dictionary template
-                template_data = {"Bag Number": all_bags}
+            bag_label = "Bag Number" if "Bag Number" in df_excel_registry.columns else df_excel_registry.columns[0]
+            
+            st.markdown("#### 🔍 Step 1: Select Record to Modify")
+            all_bags_list = sorted(df_excel_registry[bag_label].dropna().unique().tolist())
+            selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list)
+             # Fetch target row data
+            row_data = df_excel_registry[df_excel_registry[bag_label] == selected_bag_to_edit].iloc[0]
+            
+            st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
+            st.caption("Write in notes if does not match bag")
+            counter_name = st.text_input("Counter:", value=str("Please fill in"))
+
+            st.markdown("---")
+            st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
+            
+            with st.form("zapier_modifier_form"):
+                c_meta1 = st.columns(1)
+                with c_meta1:
+                    notes = st.text_input("Notes", value=row_data.get("Notes",""))
                 
-                # Initialize every ticket type column with zeros
-                for ticket in TICKET_COLUMNS:
-                    template_data[ticket] = [0] * len(all_bags)
+                st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
+                
+                meta_cols = [bag_label, "Name", "Notes","Date","Day","Shift Start","Shift End","Gate"]
+                meta_cols_existing = [c for c in meta_cols if c in df_excel_registry.columns]
+                ticket_cols = TICKET_COLUMNS
+
+                ticket_inputs = {}
+                t_cols_chunks = [ticket_cols[x:x+4] for x in range(0, len(ticket_cols), 4)]
+                for chunk in t_cols_chunks:
+                    form_cols = st.columns(len(chunk))
+                    for idx, t_col in enumerate(chunk):
+                        with form_cols[idx]:
+                            try: current_qty_val = int(row_data.get(t_col, 0))
+                            except: current_qty_val = 0
+                            ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=0, value=current_qty_val, step=1)
+                
+                submit_changes = st.form_submit_button("🚀 Send Updates to Database")
+            
+            if submit_changes:
+                # Build payload payload explicitly so Zapier receives flat text key pairs
+                payload = {
+                    "bag_number": str(selected_bag_to_edit),
+                    "counter": counter_name,
+                    "notes": notes,
+                }
+                # Merge dynamic numbers directly into payload root
+                for ticket_name, qty in ticket_inputs.items():
+                    payload[f"ticket_{ticket_name}"] = qty
+
+                with st.spinner("Firing webhook to Database..."):
+                    try:
+                        response = requests.post(ZAPIER_AUDITOR_HOOK_URL, json=payload)
+                        
+                        if response.status_code in [200, 201]:
+                            st.success("🎉 Sent to Database! Enter next bag.")
+                        else:
+                            st.error(f"Zapier rejected request with status code: {response.status_code}")
+                    except Exception as e:
+                        st.error(f"Failed to connect to Zapier webhook: {e}")
+
+
+            #all_bags = sorted(df_excel_counted["Bag Number"].unique().tolist())
+            # if "wide_adjustment_df" not in st.session_state:
+            #     # Create the base dictionary template
+            #     template_data = {"Bag Number": all_bags}
+                
+            #     # Initialize every ticket type column with zeros
+            #     for ticket in TICKET_COLUMNS:
+            #         template_data[ticket] = [0] * len(all_bags)
                     
-                df_template_data = pd.DataFrame(template_data)
-            else:
-                df_template_data = st.session_state.wide_adjustment_df.copy()
+            #     df_template_data = pd.DataFrame(template_data)
+            # else:
+            #     df_template_data = st.session_state.wide_adjustment_df.copy()
 
-            st.markdown("#### Input Corrections")
-            st.caption("Double-click any cell to input adjustments directly into the matrix.")
+            # st.markdown("#### Input Corrections")
+            # st.caption("Double-click any cell to input adjustments directly into the matrix.")
 
-            # 3. Render the interactive wide table matrix
-            edited_matrix = st.data_editor(
-                df_template_data,
-                disabled=["Bag Number"], # Lock down only the bag numbers so they remain as clean row labels
-                hide_index=True,
-                use_container_width=True,
-                key="wide_bulk_editor"
-            )
+            # # 3. Render the interactive wide table matrix
+            # edited_matrix = st.data_editor(
+            #     df_template_data,
+            #     disabled=["Bag Number"], # Lock down only the bag numbers so they remain as clean row labels
+            #     hide_index=True,
+            #     use_container_width=True,
+            #     key="wide_bulk_editor"
+            # )
 
-            # 4. Handle Save & Submit
-            if st.button("📤 Submit Adjustments", type="primary"):
-                st.session_state.wide_adjustment_df = edited_matrix.copy()
-                st.success("🎉 Matrix adjustments committed successfully!")
+            # # 4. Handle Save & Submit
+            # if st.button("📤 Submit Adjustments", type="primary"):
+            #     st.session_state.wide_adjustment_df = edited_matrix.copy()
+            #     st.success("🎉 Matrix adjustments committed successfully!")
 
+
+
+                #################################
+             ######## Results ###########
+                #################################
             st.markdown("### Audit")
             st.markdown("###### Negative values indicate missing wristbands/stickers")
             ticket_cols = TICKET_COLUMNS
@@ -785,6 +873,10 @@ else:
                 st.info("Waiting for both PrePack and Counted datasets to perform calculation.")
 
 
+
+                #################################
+             ######## Audit Chart ###########
+                #################################
             st.write("Analytics View")
             # (...Keep original Page 2 Charts layout code intact...)
             chart2_data = df_audit.copy()
@@ -873,7 +965,7 @@ else:
             with st.form("zapier_modifier_form"):
                 c_meta1, = st.columns(1)
                 with c_meta1:
-                    notes = st.text_input("Notes", value=str(""))
+                    notes = st.text_input("Notes", value=row_data.get("Notes",""))
                 
                 st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
                 
@@ -906,8 +998,7 @@ else:
 
                 with st.spinner("Firing webhook to Database..."):
                     try:
-                        ZAPIER_HOOK_URL = "https://hooks.zapier.com/hooks/catch/28076615/42ath8o/"
-                        response = requests.post(ZAPIER_HOOK_URL, json=payload)
+                        response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
                         
                         if response.status_code in [200, 201]:
                             st.success("🎉 Sent to Database! Enter next bag.")
