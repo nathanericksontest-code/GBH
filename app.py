@@ -701,7 +701,7 @@ else:
                     
                 df_template_data = pd.DataFrame(template_data)
             else:
-                df_template_data = st.session_state.wide_adjustment_df
+                df_template_data = st.session_state.wide_adjustment_df.copy()
 
             st.markdown("#### Input Corrections")
             st.caption("Double-click any cell to input adjustments directly into the matrix.")
@@ -738,13 +738,13 @@ else:
                 
                 # 2. Extract and align dataframes by setting Bag Number as the layout index
                 # Only pull ticket columns that actually exist in both sheets to prevent NaN crashes
-                valid_cols = [col for col in ticket_cols if col in df_pre.columns and col in df_cnt.columns]
+                valid_cols = [col for col in ticket_cols if col in df_pre.columns and col in df_evt.columns and col in df_cnt.columns and col in df_add.columns]
                 
                 if valid_cols:
                     pre_matrix = df_pre.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
                     cnt_matrix = df_cnt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
                     evt_matrix = df_evt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
-                    add_matrix = df_evt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+                    add_matrix = df_add.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
 
                     # 3. Align both frames completely on matching Bag Numbers
                     # This keeps all bags from both sheets and aligns their structures
