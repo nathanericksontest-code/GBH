@@ -11,6 +11,7 @@ import requests
 import webscrape
 import asyncio
 import base64
+import numpy as np
 
 st.set_page_config(page_title="Gate Operations Control", layout="wide")
 
@@ -413,6 +414,8 @@ else:
     
     df_raw["Broad Category Group"] = df_raw["Ticket name"].apply(categorized_label)
 
+    df_raw["Cash"] = np.where(df_raw["Payment source"] == "Cash payment", df_raw["Price"], 0)
+    
     # Global variables required across analytical screens
     start_filter, end_filter = datetime.datetime.now(), datetime.datetime.now()
     filter_mode = "Broad Category Groups (Clean Summary)"
