@@ -142,8 +142,11 @@ def run_zapier(df_zap,df_prepack,destination):
 
     # Fetch target row data safely
     row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
-    prepack_row_data = df_prepack[df_prepack[bag_label] == selected_bag_to_edit].iloc[0]
-    volunteer_name = prepack_row_data.get("Name", "none")
+    try:
+        prepack_row_data = df_prepack[df_prepack[bag_label] == selected_bag_to_edit].iloc[0]
+        volunteer_name = prepack_row_data.get("Name", "none")
+    except:
+        volunteer_name = "Not assigned"
 
     with col2:
         # Use standard markdown instead of subheader to drop the large padding blocks
