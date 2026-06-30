@@ -121,7 +121,7 @@ def run_zapier(df_zap,destination):
     counter_name = st.text_input("Counter:", value=str("Please fill in"), key=f"{destination}_counter")
 
     st.markdown("---")
-    st.markdown(f"#### 🛠️ Step 2: Update Data Fields", key=f"{destination}_update_data")
+    st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
     
     with st.form("zapier_counter_form"):
         c_meta1, = st.columns(1)
@@ -165,12 +165,12 @@ def run_zapier(df_zap,destination):
         for ticket_name, qty in ticket_inputs.items():
             payload[f"ticket_{ticket_name}"] = qty
 
-        with st.spinner("Firing webhook to Database...", key=f"{destination}_firing"):
+        with st.spinner("Firing webhook to Database..."):
             try:
                 response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
                 
                 if response.status_code in [200, 201]:
-                    st.success("🎉 Sent to Database! Enter next bag.", key=f"{destination}_success")
+                    st.success("🎉 Sent to Database! Enter next bag.")
                 else:
                     st.error(f"Zapier rejected request with status code: {response.status_code}")
             except Exception as e:
