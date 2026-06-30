@@ -274,6 +274,7 @@ if is_authenticated and page_selection in ["🎒 Per-Bag Inventory Audit", "📝
     df_excel_counted = load_google_sheet_inventory(GOOGLE_SHEET_COUNTER_URL)
 else:
     st.session_state.download_file_path = ""
+    st.session_stateadjustment_df = pd.DataFrame()
     df_excel_registry = pd.DataFrame()
 
 # =========================================================================
