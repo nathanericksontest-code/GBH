@@ -499,204 +499,58 @@ else:
     # RENDER SELECTED PAGE SWITCH BLOCKS
     # =========================================================================
     if page_selection == "📋 Live Transaction Ledger":
-        st.subheader("Live Operational Records View")
-        
-        if not is_authenticated:
-            st.warning("🔒 Access Denied. Please authenticate via the sidebar panel.")
-        else:
-            col1, col2 = st.columns(2)
-            with col1:
-                sort_choice = st.selectbox("Primary Sort Column", options=["Check-in time", "Check-in by", "Ticket name", "Broad Category Group"])
-            with col2:
-                sort_order = st.radio("Direction", options=["Ascending ⬆️", "Descending ⬇️"], horizontal=True)
-        
-            is_ascending = (sort_order == "Ascending ⬆️")
-            if sort_choice == "Check-in time":
-                filtered_df = filtered_df.sort_values(by="Check-in time_parsed", ascending=is_ascending, na_position="last")
+        if not df_raw.empty:
+            st.subheader("Live Operational Records View")
+            
+            if not is_authenticated:
+                st.warning("🔒 Access Denied. Please authenticate via the sidebar panel.")
             else:
-                filtered_df = filtered_df.sort_values(by=sort_choice, ascending=is_ascending)
-                
-            display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by","Refunded by","Refund date"]
-            available_display_cols = [c for c in display_cols if c in filtered_df.columns]
-            st.dataframe(filtered_df[available_display_cols], width='stretch', hide_index=True)
+                col1, col2 = st.columns(2)
+                with col1:
+                    sort_choice = st.selectbox("Primary Sort Column", options=["Check-in time", "Check-in by", "Ticket name", "Broad Category Group"])
+                with col2:
+                    sort_order = st.radio("Direction", options=["Ascending ⬆️", "Descending ⬇️"], horizontal=True)
             
-            if not df_raw.empty:
-                # 1. Filter down to successful check-ins only
-                df_checked_in = df_raw[df_raw["Status"] == "Checked In"].copy()
-                
-                if not df_checked_in.empty:
-                    # 2. Ensure timestamps are formatted uniformly into readable string windows
-                    df_checked_in["Check-In Time"] = df_checked_in["Check-in time_parsed"].dt.strftime("%Y-%m-%d %I:%M %p")
-                    
-                    # 3. Create your cross-tabulation (Pivot Table) counting categories
-                    # This automatically places your unique categories as horizontal columns!
-                    df_pivot = pd.crosstab(
-                        index=[df_checked_in["Check-In Time"], df_checked_in["Check-in by"]],
-                        columns=df_checked_in["Broad Category Group"]
-                    ).reset_index()
-                    
-                    # 4. Clean up the naming of the column index headers
-                    df_pivot.columns.name = None
-                    
-                    # 5. Dynamic Column Alignment Map: Align with the Counted table structure
-                    # Ensure all columns exist even if no one checked into them during that minute frame
-                    target_columns = TICKET_COLUMNS
-                    
-                    for col in target_columns:
-                        if col not in df_pivot.columns:
-                            df_pivot[col] = 0 # Initialize empty column if missing
-                            
-                    # 6. Re-order cleanly to match your precise user interface layout
-                    final_cols_order = ["Check-In Time", "Check-in by"] + target_columns
-                    # Filter down only to columns that we explicitly want to display
-                    df_final_matrix = df_pivot[[c for c in final_cols_order if c in df_pivot.columns]]
-                    
-                    # 7. Sort Chronologically (Newest check-ins at the top)
-                    df_final_matrix = df_final_matrix.sort_values(by="Check-In Time", ascending=False)
-                    
-                    # Display the result table
-                    st.dataframe(df_final_matrix, width='stretch', hide_index=True)
+                is_ascending = (sort_order == "Ascending ⬆️")
+                if sort_choice == "Check-in time":
+                    filtered_df = filtered_df.sort_values(by="Check-in time_parsed", ascending=is_ascending, na_position="last")
                 else:
-                    st.info("No active 'Checked In' transactions found matching your filtering parameters.")
-            else:
-                st.warning("Eventeny live transaction data ledger is currently unavailable.")
-           
-
-
-    elif page_selection == "📊 Check-In Analytics Chart":
-        st.subheader("Check-In Velocity Timeline")
-        
-        if not is_authenticated:
-            st.warning("🔒 Access Denied. Please authenticate via the sidebar panel.")
-        else:
-            st.write("Analytics View")
-            # (...Keep original Page 2 Charts layout code intact...)
-            chart_data = filtered_df[filtered_df["Check-in time_parsed"].notna()].copy()
-            if chart_data.empty:
-                st.warning("No data matches the selected timeframe bounds or global filter criteria.")
-            else:
-                c1 = st.columns(1)[0]
-                with c1:
-                    time_bucket = st.selectbox("Timeline Interval Resolution:", options=["15 Minutes", "30 Minutes", "1 Hour", "Raw Cumulative Total"], index=1)
-                
-                if filter_mode == "Broad Category Groups (Clean Summary)":
-                    color_target = "Broad Category Group"
-                else:
-                    color_target = "Ticket name"
-                if time_bucket != "Raw Cumulative Total":
-                    freq_map = {"15 Minutes": "15min", "30 Minutes": "30min", "1 Hour": "h"}
-                    chart_data = chart_data.set_index("Check-in time_parsed")
-                    binned_df = chart_data.groupby([pd.Grouper(freq=freq_map[time_bucket]), color_target]).size().reset_index(name="Arrivals Count")
-                    fig = px.bar(binned_df, x="Check-in time_parsed", y="Arrivals Count", color=color_target, barmode="stack", height=600, color_discrete_sequence=px.colors.qualitative.Bold)
-                else:
-                    chart_data = chart_data.sort_values("Check-in time_parsed")
-                    chart_data["Total Scans Over Time"] = range(1, len(chart_data) + 1)
-                    fig = px.line(chart_data, x="Check-in time_parsed", y="Total Scans Over Time", color=color_target, height=600, color_discrete_sequence=px.colors.qualitative.Bold)
-                fig.update_layout(hovermode="x unified", plot_bgcolor="white")
-                st.plotly_chart(fig, width='stretch')
-
-
-
-
-
-    #################################
-    ######## Audit Page ###########
-    #################################
-    elif page_selection == "🎒 Per-Bag Inventory Audit":
-
-        if not is_authenticated:
-            st.warning("🔒 Access Denied. Input the correct password in the sidebar.")
-        elif df_excel_registry.empty:
-            st.warning("Could not fetch data from Google Sheet link.")
-        else:
-            filtered_df = filtered_df.copy()
-            filt_agents = sorted(filtered_df["Check-in by"].unique().tolist())
-            df_excel_registry = df_excel_registry[df_excel_registry["Name"].isin(filt_agents)]
-
-            filt_bags = sorted(df_excel_registry["Bag Number"].unique().tolist())
-
-            with st.expander("GBH PrePack Filter", expanded=False):
-                st.markdown("#### Filter Bag Number")
-                all_bags = sorted(df_excel_registry["Bag Number"].unique().tolist())
-                b_action = st.radio("Bag Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
-                st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
-                selected_bags = [] # Make sure this list is initialized right before the loop
-                for j, bag in enumerate(all_bags):
-                    unique_key = f"b_{j}_{b_action.lower().replace(' ', '_')}"
-                    current_row = df_excel_registry[df_excel_registry["Bag Number"] == bag]
+                    filtered_df = filtered_df.sort_values(by=sort_choice, ascending=is_ascending)
                     
-                    # Safety Check: Make sure the row isn't empty before trying to index into it
-                    if not current_row.empty:
-                        # Extract the raw scalar values using .iloc[0]
-                        start_dt = current_row["Start Date"].iloc[0]
-                        start_tm = current_row["Shift Start"].iloc[0]
-                        end_dt   = current_row["End Date"].iloc[0]
-                        end_tm   = current_row["Shift End"].iloc[0]
-                        name     = current_row["Name"].iloc[0]
-                        
-                        # Format the label text cleanly
-                        label_text = f"{str(bag)} {name}: {start_tm} {start_dt} - {end_tm} {end_dt}"
-                        
-                        if st.checkbox(label_text, value=(b_action == "Select All"), key=unique_key): 
-                            selected_bags.append(bag)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-            df_excel_registry = df_excel_registry[df_excel_registry["Bag Number"].isin(selected_bags)]
-            df_excel_counted = df_excel_counted[df_excel_counted["Bag Number"].isin(selected_bags)]
-            
-            # How many tickets were found that could be attributed to a check in person?
-            bag_agents = sorted(df_excel_registry["Name"].unique().tolist())
-            df_lim_filtered = filtered_df[filtered_df["Check-in by"].isin(bag_agents)]
-
-            count_in_people_with_bags = len(df_lim_filtered)
-            st.markdown("### Eventeny to GBH Database")
-            m1, m2 = st.columns(2)
-            m1.metric("Number Attributed to People with PrePack Bag: ", f"{count_in_people_with_bags:,}")
-            m2.metric("Number With no Matching Name: ", f"{(filtered_count-count_in_people_with_bags):,}")
-            
-                #################################
-             ######## PrePack ###########
-                #################################
-            st.markdown("### PrePack")
-            st.dataframe(df_excel_registry, width='stretch', hide_index=True)
-            
-            with st.expander("Eventeny Filtered Transactions", expanded=False):
-                st.markdown("### Eventeny")
-                # display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by"]
-                #             available_display_cols = [c for c in display_cols if c in filtered_df.columns]
-                #             st.dataframe(df_lim_filtered[available_display_cols], width='stretch', hide_index=True)
-                #             st.markdown("### 📊 Consolidated Ticket Check-In Log Matrix")
-
-                if not df_lim_filtered.empty:
+                display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by","Refunded by","Refund date"]
+                available_display_cols = [c for c in display_cols if c in filtered_df.columns]
+                st.dataframe(filtered_df[available_display_cols], width='stretch', hide_index=True)
+                
+                if not df_raw.empty:
                     # 1. Filter down to successful check-ins only
-                    df_checked_in_sums =df_lim_filtered.copy()
-
-                    if not df_checked_in_sums.empty:
+                    df_checked_in = df_raw[df_raw["Status"] == "Checked In"].copy()
+                    
+                    if not df_checked_in.empty:
                         # 2. Ensure timestamps are formatted uniformly into readable string windows
-                        df_checked_in_sums["Check-In Time"] = df_checked_in_sums["Check-in time_parsed"].dt.strftime("%Y-%m-%d %I:%M %p")
+                        df_checked_in["Check-In Time"] = df_checked_in["Check-in time_parsed"].dt.strftime("%Y-%m-%d %I:%M %p")
                         
                         # 3. Create your cross-tabulation (Pivot Table) counting categories
                         # This automatically places your unique categories as horizontal columns!
-                        df_pivot_sums = pd.crosstab(
-                            index=[df_checked_in_sums["Check-In Time"], df_checked_in_sums["Check-in by"]],
-                            columns=df_checked_in_sums["Broad Category Group"]
+                        df_pivot = pd.crosstab(
+                            index=[df_checked_in["Check-In Time"], df_checked_in["Check-in by"]],
+                            columns=df_checked_in["Broad Category Group"]
                         ).reset_index()
                         
                         # 4. Clean up the naming of the column index headers
-                        df_pivot_sums.columns.name = None
+                        df_pivot.columns.name = None
                         
                         # 5. Dynamic Column Alignment Map: Align with the Counted table structure
                         # Ensure all columns exist even if no one checked into them during that minute frame
                         target_columns = TICKET_COLUMNS
                         
                         for col in target_columns:
-                            if col not in df_pivot_sums.columns:
-                                df_pivot_sums[col] = 0 # Initialize empty column if missing
+                            if col not in df_pivot.columns:
+                                df_pivot[col] = 0 # Initialize empty column if missing
                                 
                         # 6. Re-order cleanly to match your precise user interface layout
                         final_cols_order = ["Check-In Time", "Check-in by"] + target_columns
                         # Filter down only to columns that we explicitly want to display
-                        df_final_matrix = df_pivot_sums[[c for c in final_cols_order if c in df_pivot_sums.columns]]
+                        df_final_matrix = df_pivot[[c for c in final_cols_order if c in df_pivot.columns]]
                         
                         # 7. Sort Chronologically (Newest check-ins at the top)
                         df_final_matrix = df_final_matrix.sort_values(by="Check-In Time", ascending=False)
@@ -708,306 +562,454 @@ else:
                 else:
                     st.warning("Eventeny live transaction data ledger is currently unavailable.")
             
-                #################################
-             ######## SHIFT BOUNDED EVENTENY ###########
-                #################################
-            st.markdown("### 🕒 Shift-Bounded Eventeny Scan Totals")
 
-            if not df_raw.empty and not df_excel_registry.empty:
-                with st.spinner("Calculating scan totals..."):
-                    df_scans = df_lim_filtered.copy()
-                    df_shifts = df_excel_registry.copy()
+
+    elif page_selection == "📊 Check-In Analytics Chart":
+        if not df_raw.empty:
+            st.subheader("Check-In Velocity Timeline")
+            
+            if not is_authenticated:
+                st.warning("🔒 Access Denied. Please authenticate via the sidebar panel.")
+            else:
+                st.write("Analytics View")
+                # (...Keep original Page 2 Charts layout code intact...)
+                chart_data = filtered_df[filtered_df["Check-in time_parsed"].notna()].copy()
+                if chart_data.empty:
+                    st.warning("No data matches the selected timeframe bounds or global filter criteria.")
+                else:
+                    c1 = st.columns(1)[0]
+                    with c1:
+                        time_bucket = st.selectbox("Timeline Interval Resolution:", options=["15 Minutes", "30 Minutes", "1 Hour", "Raw Cumulative Total"], index=1)
                     
-                    df_scans["Agent_Lower"] = df_scans["Check-in by"].str.lower().str.strip()
-                    df_shifts["Name_Lower"] = df_shifts["Name"].str.lower().str.strip()
-                    
-                    # Track the index of every scan that successfully matches a shift window
-                    matched_scan_indices = set()
-                    
-                    meta_cols = ["Bag Number", "Gate", "Name", "Shift Start", "Start Date", "Shift End", "End Date", "Day", "Shift", "Name_Lower"]
-                    ticket_cols = [col for col in df_shifts.columns if col not in meta_cols]
-                    
-                    bounded_shift_summary = []
-                    
-                    # 1. First Pass: Process all scheduled shifts normally
-                    for _, shift_row in df_shifts.iterrows():
-                        staff_member = shift_row.get("Name_Lower", "")
-                        bag_id = str(shift_row.get("Bag Number", "N/A"))
+                    if filter_mode == "Broad Category Groups (Clean Summary)":
+                        color_target = "Broad Category Group"
+                    else:
+                        color_target = "Ticket name"
+                    if time_bucket != "Raw Cumulative Total":
+                        freq_map = {"15 Minutes": "15min", "30 Minutes": "30min", "1 Hour": "h"}
+                        chart_data = chart_data.set_index("Check-in time_parsed")
+                        binned_df = chart_data.groupby([pd.Grouper(freq=freq_map[time_bucket]), color_target]).size().reset_index(name="Arrivals Count")
+                        fig = px.bar(binned_df, x="Check-in time_parsed", y="Arrivals Count", color=color_target, barmode="stack", height=600, color_discrete_sequence=px.colors.qualitative.Bold)
+                    else:
+                        chart_data = chart_data.sort_values("Check-in time_parsed")
+                        chart_data["Total Scans Over Time"] = range(1, len(chart_data) + 1)
+                        fig = px.line(chart_data, x="Check-in time_parsed", y="Total Scans Over Time", color=color_target, height=600, color_discrete_sequence=px.colors.qualitative.Bold)
+                    fig.update_layout(hovermode="x unified", plot_bgcolor="white")
+                    st.plotly_chart(fig, width='stretch')
+
+
+
+
+
+    #################################
+    ######## Audit Page ###########
+    #################################
+    elif page_selection == "🎒 Per-Bag Inventory Audit":
+        if not df_raw.empty:
+            if not is_authenticated:
+                st.warning("🔒 Access Denied. Input the correct password in the sidebar.")
+            elif df_excel_registry.empty:
+                st.warning("Could not fetch data from Google Sheet link.")
+            else:
+                filtered_df = filtered_df.copy()
+                filt_agents = sorted(filtered_df["Check-in by"].unique().tolist())
+                df_excel_registry = df_excel_registry[df_excel_registry["Name"].isin(filt_agents)]
+
+                filt_bags = sorted(df_excel_registry["Bag Number"].unique().tolist())
+
+                with st.expander("GBH PrePack Filter", expanded=False):
+                    st.markdown("#### Filter Bag Number")
+                    all_bags = sorted(df_excel_registry["Bag Number"].unique().tolist())
+                    b_action = st.radio("Bag Shortcuts:", ["Select All", "Deselect All"], horizontal=True)
+                    st.markdown('<div class="scroll-container">', unsafe_allow_html=True)
+                    selected_bags = [] # Make sure this list is initialized right before the loop
+                    for j, bag in enumerate(all_bags):
+                        unique_key = f"b_{j}_{b_action.lower().replace(' ', '_')}"
+                        current_row = df_excel_registry[df_excel_registry["Bag Number"] == bag]
                         
-                        if pd.isna(shift_row.get("Name")) or staff_member == "":
-                            continue
+                        # Safety Check: Make sure the row isn't empty before trying to index into it
+                        if not current_row.empty:
+                            # Extract the raw scalar values using .iloc[0]
+                            start_dt = current_row["Start Date"].iloc[0]
+                            start_tm = current_row["Shift Start"].iloc[0]
+                            end_dt   = current_row["End Date"].iloc[0]
+                            end_tm   = current_row["Shift End"].iloc[0]
+                            name     = current_row["Name"].iloc[0]
                             
-                        start_datetime_str = f"{shift_row.get('Start Date')} {shift_row.get('Shift Start')}"
-                        end_datetime_str = f"{shift_row.get('End Date')} {shift_row.get('Shift End')}"
-                        
-                        shift_start_dt = pd.to_datetime(start_datetime_str, errors='coerce')
-                        shift_end_dt = pd.to_datetime(end_datetime_str, errors='coerce')
-                        
-                        if pd.isna(shift_start_dt) or pd.isna(shift_end_dt):
-                            continue
-                        
-                        # Isolate scans for this agent in this specific window
-                        scans_in_window = df_scans[
-                            (df_scans["Agent_Lower"] == staff_member) &
-                            (df_scans["Check-in time_parsed"] >= shift_start_dt) &
-                            (df_scans["Check-in time_parsed"] <= shift_end_dt)
-                        ]
-                        
-                        # Remember these scans so we don't double-count them later
-                        matched_scan_indices.update(scans_in_window.index.tolist())
-                        
-                        summary_entry = {
-                            "Bag Number": bag_id,
-                            "Name": shift_row.get("Name"),
-                            "Shift Bounds": f"{start_datetime_str} - {end_datetime_str}"
-                        }
-                        
-                        # Exact column match fix applied here too
-                        for ticket_type in ticket_cols:
-                            if not scans_in_window.empty:
-                                matched_sum = (scans_in_window["Broad Category Group"].str.lower().str.strip() == ticket_type.lower().strip()).sum()
-                            else:
-                                matched_sum = 0
-                            summary_entry[ticket_type] = matched_sum
+                            # Format the label text cleanly
+                            label_text = f"{str(bag)} {name}: {start_tm} {start_dt} - {end_tm} {end_dt}"
                             
-                        bounded_shift_summary.append(summary_entry)
-                        
-                    # 2. Second Pass: Find all scans that FAILED to match any time window
-                    all_unassigned_scans = df_scans[~df_scans.index.isin(matched_scan_indices)]
-                    
-                    # Group the leftovers by agent name so we can give each agent their own catch-all row
-                    if not all_unassigned_scans.empty:
-                        unique_failed_agents = all_unassigned_scans["Check-in by"].unique()
-                        
-                        for agent in unique_failed_agents:
-                            agent_leftovers = all_unassigned_scans[all_unassigned_scans["Check-in by"] == agent]
+                            if st.checkbox(label_text, value=(b_action == "Select All"), key=unique_key): 
+                                selected_bags.append(bag)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                df_excel_registry = df_excel_registry[df_excel_registry["Bag Number"].isin(selected_bags)]
+                df_excel_counted = df_excel_counted[df_excel_counted["Bag Number"].isin(selected_bags)]
+                
+                # How many tickets were found that could be attributed to a check in person?
+                bag_agents = sorted(df_excel_registry["Name"].unique().tolist())
+                df_lim_filtered = filtered_df[filtered_df["Check-in by"].isin(bag_agents)]
+
+                count_in_people_with_bags = len(df_lim_filtered)
+                st.markdown("### Eventeny to GBH Database")
+                m1, m2 = st.columns(2)
+                m1.metric("Number Attributed to People with PrePack Bag: ", f"{count_in_people_with_bags:,}")
+                m2.metric("Number With no Matching Name: ", f"{(filtered_count-count_in_people_with_bags):,}")
+                
+                    #################################
+                ######## PrePack ###########
+                    #################################
+                st.markdown("### PrePack")
+                st.dataframe(df_excel_registry, width='stretch', hide_index=True)
+                
+                with st.expander("Eventeny Filtered Transactions", expanded=False):
+                    st.markdown("### Eventeny")
+                    # display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by"]
+                    #             available_display_cols = [c for c in display_cols if c in filtered_df.columns]
+                    #             st.dataframe(df_lim_filtered[available_display_cols], width='stretch', hide_index=True)
+                    #             st.markdown("### 📊 Consolidated Ticket Check-In Log Matrix")
+
+                    if not df_lim_filtered.empty:
+                        # 1. Filter down to successful check-ins only
+                        df_checked_in_sums =df_lim_filtered.copy()
+
+                        if not df_checked_in_sums.empty:
+                            # 2. Ensure timestamps are formatted uniformly into readable string windows
+                            df_checked_in_sums["Check-In Time"] = df_checked_in_sums["Check-in time_parsed"].dt.strftime("%Y-%m-%d %I:%M %p")
                             
-                            # Create a special fallback row design
-                            leftover_entry = {
-                                "Bag Number": f"⚠️{agent}",
-                                "Name": agent,
-                                "Shift Bounds": "Outside Scheduled Hours"
+                            # 3. Create your cross-tabulation (Pivot Table) counting categories
+                            # This automatically places your unique categories as horizontal columns!
+                            df_pivot_sums = pd.crosstab(
+                                index=[df_checked_in_sums["Check-In Time"], df_checked_in_sums["Check-in by"]],
+                                columns=df_checked_in_sums["Broad Category Group"]
+                            ).reset_index()
+                            
+                            # 4. Clean up the naming of the column index headers
+                            df_pivot_sums.columns.name = None
+                            
+                            # 5. Dynamic Column Alignment Map: Align with the Counted table structure
+                            # Ensure all columns exist even if no one checked into them during that minute frame
+                            target_columns = TICKET_COLUMNS
+                            
+                            for col in target_columns:
+                                if col not in df_pivot_sums.columns:
+                                    df_pivot_sums[col] = 0 # Initialize empty column if missing
+                                    
+                            # 6. Re-order cleanly to match your precise user interface layout
+                            final_cols_order = ["Check-In Time", "Check-in by"] + target_columns
+                            # Filter down only to columns that we explicitly want to display
+                            df_final_matrix = df_pivot_sums[[c for c in final_cols_order if c in df_pivot_sums.columns]]
+                            
+                            # 7. Sort Chronologically (Newest check-ins at the top)
+                            df_final_matrix = df_final_matrix.sort_values(by="Check-In Time", ascending=False)
+                            
+                            # Display the result table
+                            st.dataframe(df_final_matrix, width='stretch', hide_index=True)
+                        else:
+                            st.info("No active 'Checked In' transactions found matching your filtering parameters.")
+                    else:
+                        st.warning("Eventeny live transaction data ledger is currently unavailable.")
+                
+                    #################################
+                ######## SHIFT BOUNDED EVENTENY ###########
+                    #################################
+                st.markdown("### 🕒 Shift-Bounded Eventeny Scan Totals")
+
+                if not df_raw.empty and not df_excel_registry.empty:
+                    with st.spinner("Calculating scan totals..."):
+                        df_scans = df_lim_filtered.copy()
+                        df_shifts = df_excel_registry.copy()
+                        
+                        df_scans["Agent_Lower"] = df_scans["Check-in by"].str.lower().str.strip()
+                        df_shifts["Name_Lower"] = df_shifts["Name"].str.lower().str.strip()
+                        
+                        # Track the index of every scan that successfully matches a shift window
+                        matched_scan_indices = set()
+                        
+                        meta_cols = ["Bag Number", "Gate", "Name", "Shift Start", "Start Date", "Shift End", "End Date", "Day", "Shift", "Name_Lower"]
+                        ticket_cols = [col for col in df_shifts.columns if col not in meta_cols]
+                        
+                        bounded_shift_summary = []
+                        
+                        # 1. First Pass: Process all scheduled shifts normally
+                        for _, shift_row in df_shifts.iterrows():
+                            staff_member = shift_row.get("Name_Lower", "")
+                            bag_id = str(shift_row.get("Bag Number", "N/A"))
+                            
+                            if pd.isna(shift_row.get("Name")) or staff_member == "":
+                                continue
+                                
+                            start_datetime_str = f"{shift_row.get('Start Date')} {shift_row.get('Shift Start')}"
+                            end_datetime_str = f"{shift_row.get('End Date')} {shift_row.get('Shift End')}"
+                            
+                            shift_start_dt = pd.to_datetime(start_datetime_str, errors='coerce')
+                            shift_end_dt = pd.to_datetime(end_datetime_str, errors='coerce')
+                            
+                            if pd.isna(shift_start_dt) or pd.isna(shift_end_dt):
+                                continue
+                            
+                            # Isolate scans for this agent in this specific window
+                            scans_in_window = df_scans[
+                                (df_scans["Agent_Lower"] == staff_member) &
+                                (df_scans["Check-in time_parsed"] >= shift_start_dt) &
+                                (df_scans["Check-in time_parsed"] <= shift_end_dt)
+                            ]
+                            
+                            # Remember these scans so we don't double-count them later
+                            matched_scan_indices.update(scans_in_window.index.tolist())
+                            
+                            summary_entry = {
+                                "Bag Number": bag_id,
+                                "Name": shift_row.get("Name"),
+                                "Shift Bounds": f"{start_datetime_str} - {end_datetime_str}"
                             }
                             
+                            # Exact column match fix applied here too
                             for ticket_type in ticket_cols:
-                                matched_sum = (agent_leftovers["Broad Category Group"].str.lower().str.strip() == ticket_type.lower().strip()).sum()
-                                leftover_entry[ticket_type] = matched_sum
+                                if not scans_in_window.empty:
+                                    matched_sum = (scans_in_window["Broad Category Group"].str.lower().str.strip() == ticket_type.lower().strip()).sum()
+                                else:
+                                    matched_sum = 0
+                                summary_entry[ticket_type] = matched_sum
                                 
-                            bounded_shift_summary.append(leftover_entry)
-
-                    # 3. Render and format the final DataFrame
-                    if bounded_shift_summary:
-                        df_bounded_output = pd.DataFrame(bounded_shift_summary)
+                            bounded_shift_summary.append(summary_entry)
+                            
+                        # 2. Second Pass: Find all scans that FAILED to match any time window
+                        all_unassigned_scans = df_scans[~df_scans.index.isin(matched_scan_indices)]
                         
-                        # Sort trick: Put true bags first numerically, and push the "⚠️ OUT-OF-BOUNDS" rows to the very bottom
-                        df_bounded_output["_sort"] = pd.to_numeric(df_bounded_output["Bag Number"], errors='coerce')
-                        # Give the out-of-bounds rows an artificially high sort number so they sink to the bottom
-                        df_bounded_output["_sort"] = df_bounded_output["_sort"].fillna(999999) 
+                        # Group the leftovers by agent name so we can give each agent their own catch-all row
+                        if not all_unassigned_scans.empty:
+                            unique_failed_agents = all_unassigned_scans["Check-in by"].unique()
+                            
+                            for agent in unique_failed_agents:
+                                agent_leftovers = all_unassigned_scans[all_unassigned_scans["Check-in by"] == agent]
+                                
+                                # Create a special fallback row design
+                                leftover_entry = {
+                                    "Bag Number": f"⚠️{agent}",
+                                    "Name": agent,
+                                    "Shift Bounds": "Outside Scheduled Hours"
+                                }
+                                
+                                for ticket_type in ticket_cols:
+                                    matched_sum = (agent_leftovers["Broad Category Group"].str.lower().str.strip() == ticket_type.lower().strip()).sum()
+                                    leftover_entry[ticket_type] = matched_sum
+                                    
+                                bounded_shift_summary.append(leftover_entry)
+
+                        # 3. Render and format the final DataFrame
+                        if bounded_shift_summary:
+                            df_bounded_output = pd.DataFrame(bounded_shift_summary)
+                            
+                            # Sort trick: Put true bags first numerically, and push the "⚠️ OUT-OF-BOUNDS" rows to the very bottom
+                            df_bounded_output["_sort"] = pd.to_numeric(df_bounded_output["Bag Number"], errors='coerce')
+                            # Give the out-of-bounds rows an artificially high sort number so they sink to the bottom
+                            df_bounded_output["_sort"] = df_bounded_output["_sort"].fillna(999999) 
+                            
+                            df_bounded_output = df_bounded_output.sort_values(by=["_sort", "Name"]).drop(columns=["_sort"])
+                            
+                            st.dataframe(df_bounded_output, width='stretch', hide_index=True)
+                        else:
+                            st.info("No data available.")
                         
-                        df_bounded_output = df_bounded_output.sort_values(by=["_sort", "Name"]).drop(columns=["_sort"])
+                        grand_total = df_bounded_output[ticket_cols].sum().sum()
+                
+
+                    st.markdown("---")
+                    # Displays a prominent KPI card displaying your overall total cleanly
+                    m1, m2 = st.columns(2)
+                    m1.metric(label="📊 Grand Total Eventeny Tickets Accounted For", value=int(grand_total))
+                    m2.metric("Number With Unidentified Ticket Type: ", f"{(count_in_people_with_bags-grand_total):,}")
+                    
+                    # Optional: Display a small itemized markdown list breaking down the counts per column
+                    itemized_breakdown = ", ".join([f"**{col}**: {int(df_bounded_output[col].sum())}" for col in ticket_cols if df_bounded_output[col].sum() > 0])
+                    st.markdown(f"**Itemized Scan Breakdown:** {itemized_breakdown}")
+
+
+                    #################################
+                ######## COUNTED ###########
+                    #################################
+                st.markdown("### Counted")
+                st.dataframe(df_excel_counted, width='stretch', hide_index=True)
+                
+
+                ######## AUDITOR ADJUSTMENTS ###########
+
+                with st.expander("Auditor Adjustments"):
+                    with st.expander("Re-count"):
+                        run_zapier(df_excel_counted.copy(),df_excel_registry.copy(), "Counted")
+                    with st.expander("Extras"):
+                        run_zapier(df_excel_extras.copy(), df_excel_registry.copy(),"Extras")
+                    with st.expander("Edits"):
+                        run_zapier(df_excel_audit.copy(), df_excel_registry.copy(),"Auditor")
+
+                #all_bags = sorted(df_excel_counted["Bag Number"].unique().tolist())
+                # if "wide_adjustment_df" not in st.session_state:
+                #     # Create the base dictionary template
+                #     template_data = {"Bag Number": all_bags}
+                    
+                #     # Initialize every ticket type column with zeros
+                #     for ticket in TICKET_COLUMNS:
+                #         template_data[ticket] = [0] * len(all_bags)
                         
-                        st.dataframe(df_bounded_output, width='stretch', hide_index=True)
-                    else:
-                        st.info("No data available.")
+                #     df_template_data = pd.DataFrame(template_data)
+                # else:
+                #     df_template_data = st.session_state.wide_adjustment_df.copy()
+
+                # st.markdown("#### Input Corrections")
+                # st.caption("Double-click any cell to input adjustments directly into the matrix.")
+
+                # # 3. Render the interactive wide table matrix
+                # edited_matrix = st.data_editor(
+                #     df_template_data,
+                #     disabled=["Bag Number"], # Lock down only the bag numbers so they remain as clean row labels
+                #     hide_index=True,
+                #     use_container_width=True,
+                #     key="wide_bulk_editor"
+                # )
+
+                # # 4. Handle Save & Submit
+                # if st.button("📤 Submit Adjustments", type="primary"):
+                #     st.session_state.wide_adjustment_df = edited_matrix.copy()
+                #     st.success("🎉 Matrix adjustments committed successfully!")
+
+
+
+                    #################################
+                ######## Results ###########
+                    #################################
+                st.markdown("### Audit")
+                st.markdown("###### Negative values indicate missing wristbands/stickers")
+                ticket_cols = TICKET_COLUMNS
+                # Ensure we have valid, matching datasets to perform math on
+                if not df_excel_registry.empty and not df_excel_counted.empty:
+                    # 1. Standardize Bag Number column handling string/numeric quirks
+                    df_pre = df_excel_registry.copy()
+                    df_cnt = df_excel_counted.copy()
+                    df_evt = df_bounded_output.copy()
+                    df_ext = df_excel_extras.copy()
+                    df_aud = df_excel_audit.copy()
                     
-                    grand_total = df_bounded_output[ticket_cols].sum().sum()
-            
-
-                st.markdown("---")
-                # Displays a prominent KPI card displaying your overall total cleanly
-                m1, m2 = st.columns(2)
-                m1.metric(label="📊 Grand Total Eventeny Tickets Accounted For", value=int(grand_total))
-                m2.metric("Number With Unidentified Ticket Type: ", f"{(count_in_people_with_bags-grand_total):,}")
-                
-                # Optional: Display a small itemized markdown list breaking down the counts per column
-                itemized_breakdown = ", ".join([f"**{col}**: {int(df_bounded_output[col].sum())}" for col in ticket_cols if df_bounded_output[col].sum() > 0])
-                st.markdown(f"**Itemized Scan Breakdown:** {itemized_breakdown}")
-
-
-                #################################
-             ######## COUNTED ###########
-                #################################
-            st.markdown("### Counted")
-            st.dataframe(df_excel_counted, width='stretch', hide_index=True)
-            
-
-            ######## AUDITOR ADJUSTMENTS ###########
-
-            with st.expander("Auditor Adjustments"):
-                with st.expander("Re-count"):
-                    run_zapier(df_excel_counted.copy(),df_excel_registry.copy(), "Counted")
-                with st.expander("Extras"):
-                    run_zapier(df_excel_extras.copy(), df_excel_registry.copy(),"Extras")
-                with st.expander("Edits"):
-                    run_zapier(df_excel_audit.copy(), df_excel_registry.copy(),"Auditor")
-
-            #all_bags = sorted(df_excel_counted["Bag Number"].unique().tolist())
-            # if "wide_adjustment_df" not in st.session_state:
-            #     # Create the base dictionary template
-            #     template_data = {"Bag Number": all_bags}
-                
-            #     # Initialize every ticket type column with zeros
-            #     for ticket in TICKET_COLUMNS:
-            #         template_data[ticket] = [0] * len(all_bags)
+                    df_pre["Bag Number"] = df_pre["Bag Number"].astype(str).str.strip()
+                    df_cnt["Bag Number"] = df_cnt["Bag Number"].astype(str).str.strip()
+                    df_evt["Bag Number"] = df_evt["Bag Number"].astype(str).str.strip()
+                    df_aud["Bag Number"] = df_aud["Bag Number"].astype(str).str.strip()
+                    df_ext["Bag Number"] = df_ext["Bag Number"].astype(str).str.strip()
                     
-            #     df_template_data = pd.DataFrame(template_data)
-            # else:
-            #     df_template_data = st.session_state.wide_adjustment_df.copy()
-
-            # st.markdown("#### Input Corrections")
-            # st.caption("Double-click any cell to input adjustments directly into the matrix.")
-
-            # # 3. Render the interactive wide table matrix
-            # edited_matrix = st.data_editor(
-            #     df_template_data,
-            #     disabled=["Bag Number"], # Lock down only the bag numbers so they remain as clean row labels
-            #     hide_index=True,
-            #     use_container_width=True,
-            #     key="wide_bulk_editor"
-            # )
-
-            # # 4. Handle Save & Submit
-            # if st.button("📤 Submit Adjustments", type="primary"):
-            #     st.session_state.wide_adjustment_df = edited_matrix.copy()
-            #     st.success("🎉 Matrix adjustments committed successfully!")
-
-
-
-                #################################
-             ######## Results ###########
-                #################################
-            st.markdown("### Audit")
-            st.markdown("###### Negative values indicate missing wristbands/stickers")
-            ticket_cols = TICKET_COLUMNS
-            # Ensure we have valid, matching datasets to perform math on
-            if not df_excel_registry.empty and not df_excel_counted.empty:
-                # 1. Standardize Bag Number column handling string/numeric quirks
-                df_pre = df_excel_registry.copy()
-                df_cnt = df_excel_counted.copy()
-                df_evt = df_bounded_output.copy()
-                df_ext = df_excel_extras.copy()
-                df_aud = df_excel_audit.copy()
-                
-                df_pre["Bag Number"] = df_pre["Bag Number"].astype(str).str.strip()
-                df_cnt["Bag Number"] = df_cnt["Bag Number"].astype(str).str.strip()
-                df_evt["Bag Number"] = df_evt["Bag Number"].astype(str).str.strip()
-                df_aud["Bag Number"] = df_aud["Bag Number"].astype(str).str.strip()
-                df_ext["Bag Number"] = df_ext["Bag Number"].astype(str).str.strip()
-                
-                # 2. Extract and align dataframes by setting Bag Number as the layout index
-                # Only pull ticket columns that actually exist in both sheets to prevent NaN crashes
-                valid_cols = [col for col in ticket_cols if col in df_pre.columns and col in df_evt.columns and col in df_cnt.columns and col in df_aud.columns]
-                
-                if valid_cols:
-                    pre_matrix = df_pre.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
-                    cnt_matrix = df_cnt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
-                    evt_matrix = df_evt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
-                    aud_matrix = df_aud.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
-                    ext_matrix = df_ext.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
-
-
-                    # 3. Align both frames completely on matching Bag Numbers
-                    # This keeps all bags from both sheets and aligns their structures
-                    all_bags = sorted(list(set(cnt_matrix.index)))
-                    pre_matrix = pre_matrix.reindex(all_bags, fill_value=0)
-                    cnt_matrix = cnt_matrix.reindex(all_bags, fill_value=0)
-                    evt_matrix = evt_matrix.reindex(all_bags, fill_value=0)
-                    aud_matrix = aud_matrix.reindex(all_bags, fill_value=0)
-                    ext_matrix = ext_matrix.reindex(all_bags, fill_value=0)
-
-                    # 4. Perform math subtraction (Negative means missing)
-                    audit_matrix = cnt_matrix + evt_matrix - aud_matrix - pre_matrix - ext_matrix 
+                    # 2. Extract and align dataframes by setting Bag Number as the layout index
+                    # Only pull ticket columns that actually exist in both sheets to prevent NaN crashes
+                    valid_cols = [col for col in ticket_cols if col in df_pre.columns and col in df_evt.columns and col in df_cnt.columns and col in df_aud.columns]
                     
-                    # 5. Format it back into a beautiful UI dataframe view
-                    df_audit = audit_matrix.reset_index()
-
-                    # ⭐ THE ADDITION: Calculate row-wise sum for all columns from index 1 to the end
-                    # (Since index 0 is 'Bag Number', columns 1 to the end are your ticket counts)
-                    row_totals = df_audit.iloc[:, 1:].sum(axis=1)
-                    red_lot_exemption = df_audit["Red Lot"]
-                    kids_exemption = df_audit["Kids"]
-                    row_totals = row_totals - red_lot_exemption - kids_exemption
-
-                    # Inject the "Total Discrepancy" column cleanly at position 1 (Column 2)
-                    df_audit.insert(1, "Total Discrepancy", row_totals)
-                    
-                    df_audit[df_audit.columns[0]] = pd.to_numeric(df_audit[df_audit.columns[0]], errors='coerce')
-                    # ⭐ THE ADDITION: Sort primarily by Total Discrepancy (Largest first)
-                    # and secondarily by Bag Number (Smallest/Alpha first)
-                    df_audit = df_audit.sort_values(
-                        by=["Total Discrepancy", df_audit.columns[0]], 
-                        ascending=[False, True]
-                    )
-                    # Display the result matrix
-                    st.dataframe(df_audit, width='stretch', hide_index=True)
-                else:
-                    st.warning("Could not find matching ticket columns between both sheets to subtract.")
-            else:
-                st.info("Waiting for both PrePack and Counted datasets to perform calculation.")
+                    if valid_cols:
+                        pre_matrix = df_pre.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+                        cnt_matrix = df_cnt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+                        evt_matrix = df_evt.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+                        aud_matrix = df_aud.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
+                        ext_matrix = df_ext.set_index("Bag Number")[valid_cols].fillna(0).astype(int)
 
 
+                        # 3. Align both frames completely on matching Bag Numbers
+                        # This keeps all bags from both sheets and aligns their structures
+                        all_bags = sorted(list(set(cnt_matrix.index)))
+                        pre_matrix = pre_matrix.reindex(all_bags, fill_value=0)
+                        cnt_matrix = cnt_matrix.reindex(all_bags, fill_value=0)
+                        evt_matrix = evt_matrix.reindex(all_bags, fill_value=0)
+                        aud_matrix = aud_matrix.reindex(all_bags, fill_value=0)
+                        ext_matrix = ext_matrix.reindex(all_bags, fill_value=0)
 
-                #################################
-             ######## Audit Chart ###########
-                #################################
-            st.write("Analytics View")
-            # (...Keep original Page 2 Charts layout code intact...)
-            chart2_data = df_audit.copy()
-            if chart2_data.empty:
-                st.warning("No data matches the selected timeframe bounds or global filter criteria.")
-            else:
-                # 1. Define all the ticket type columns we want to stack/color by
-                ticket_columns = TICKET_COLUMNS
-                
-                available_tickets = [col for col in ticket_columns if col in chart2_data.columns]
+                        # 4. Perform math subtraction (Negative means missing)
+                        audit_matrix = cnt_matrix + evt_matrix - aud_matrix - pre_matrix - ext_matrix 
+                        
+                        # 5. Format it back into a beautiful UI dataframe view
+                        df_audit = audit_matrix.reset_index()
 
-                # CHANGED: barmode="group" places categories side-by-side
-                fig = px.bar(
-                    chart2_data, 
-                    x="Bag Number", 
-                    y=available_tickets,
-                    title="Audit Results by Bag & Ticket Category",
-                    barmode="group",  
-                    height=600, 
-                    color_discrete_sequence=px.colors.qualitative.Bold
-                )
-                
-                # 1. Clean up layout axes (Removing vertical dotted grid lines)
-                fig.update_layout(
-                    hovermode="closest",  
-                    plot_bgcolor="white",
-                    xaxis={
-                        'type': 'category',
-                        'showgrid': False,     # Strips out the vertical grid lines entirely
-                    }, 
-                    yaxis={
-                        'zeroline': True,      
-                        'zerolinecolor': 'black',
-                        'zerolinewidth': 1.5,
-                        'showgrid': True,      # Keep horizontal lines for tracking values
-                        'gridcolor': '#F0F0F0'
-                    },
-                    yaxis_title="Count / Discrepancy",
-                    xaxis_title="Bag Number",
-                    legend_title_text="Ticket Type"
-                )
+                        # ⭐ THE ADDITION: Calculate row-wise sum for all columns from index 1 to the end
+                        # (Since index 0 is 'Bag Number', columns 1 to the end are your ticket counts)
+                        row_totals = df_audit.iloc[:, 1:].sum(axis=1)
+                        red_lot_exemption = df_audit["Red Lot"]
+                        kids_exemption = df_audit["Kids"]
+                        row_totals = row_totals - red_lot_exemption - kids_exemption
 
-                # 2. Add alternating gray background shading for each unique bag group
-                unique_bags = chart2_data["Bag Number"].unique().tolist()
-                
-                for index, bag in enumerate(unique_bags):
-                    if index % 2 == 0:  # Alternate every other bag group
-                        fig.add_vrect(
-                            x0=index - 0.5,   # Stretch shading from the left edge of the group boundary
-                            x1=index + 0.5,   # To the right edge of the group boundary
-                            fillcolor="#F7F7F8", 
-                            opacity=1.0, 
-                            layer="below",    # Forces the shading background behind the colorful data bars
-                            line_width=0
+                        # Inject the "Total Discrepancy" column cleanly at position 1 (Column 2)
+                        df_audit.insert(1, "Total Discrepancy", row_totals)
+                        
+                        df_audit[df_audit.columns[0]] = pd.to_numeric(df_audit[df_audit.columns[0]], errors='coerce')
+                        # ⭐ THE ADDITION: Sort primarily by Total Discrepancy (Largest first)
+                        # and secondarily by Bag Number (Smallest/Alpha first)
+                        df_audit = df_audit.sort_values(
+                            by=["Total Discrepancy", df_audit.columns[0]], 
+                            ascending=[False, True]
                         )
-                        
-                st.plotly_chart(fig, use_container_width=True)
-            
+                        # Display the result matrix
+                        st.dataframe(df_audit, width='stretch', hide_index=True)
+                    else:
+                        st.warning("Could not find matching ticket columns between both sheets to subtract.")
+                else:
+                    st.info("Waiting for both PrePack and Counted datasets to perform calculation.")
+
+
+
+                    #################################
+                ######## Audit Chart ###########
+                    #################################
+                st.write("Analytics View")
+                # (...Keep original Page 2 Charts layout code intact...)
+                chart2_data = df_audit.copy()
+                if chart2_data.empty:
+                    st.warning("No data matches the selected timeframe bounds or global filter criteria.")
+                else:
+                    # 1. Define all the ticket type columns we want to stack/color by
+                    ticket_columns = TICKET_COLUMNS
+                    
+                    available_tickets = [col for col in ticket_columns if col in chart2_data.columns]
+
+                    # CHANGED: barmode="group" places categories side-by-side
+                    fig = px.bar(
+                        chart2_data, 
+                        x="Bag Number", 
+                        y=available_tickets,
+                        title="Audit Results by Bag & Ticket Category",
+                        barmode="group",  
+                        height=600, 
+                        color_discrete_sequence=px.colors.qualitative.Bold
+                    )
+                    
+                    # 1. Clean up layout axes (Removing vertical dotted grid lines)
+                    fig.update_layout(
+                        hovermode="closest",  
+                        plot_bgcolor="white",
+                        xaxis={
+                            'type': 'category',
+                            'showgrid': False,     # Strips out the vertical grid lines entirely
+                        }, 
+                        yaxis={
+                            'zeroline': True,      
+                            'zerolinecolor': 'black',
+                            'zerolinewidth': 1.5,
+                            'showgrid': True,      # Keep horizontal lines for tracking values
+                            'gridcolor': '#F0F0F0'
+                        },
+                        yaxis_title="Count / Discrepancy",
+                        xaxis_title="Bag Number",
+                        legend_title_text="Ticket Type"
+                    )
+
+                    # 2. Add alternating gray background shading for each unique bag group
+                    unique_bags = chart2_data["Bag Number"].unique().tolist()
+                    
+                    for index, bag in enumerate(unique_bags):
+                        if index % 2 == 0:  # Alternate every other bag group
+                            fig.add_vrect(
+                                x0=index - 0.5,   # Stretch shading from the left edge of the group boundary
+                                x1=index + 0.5,   # To the right edge of the group boundary
+                                fillcolor="#F7F7F8", 
+                                opacity=1.0, 
+                                layer="below",    # Forces the shading background behind the colorful data bars
+                                line_width=0
+                            )
+                            
+                    st.plotly_chart(fig, use_container_width=True)
+                
     # ===================================================
     # NEW PAGE 4: LIVE WORKBAG SHEET ALLOCATION EDITOR (VIA ZAPIER)
     # =========================================================================
