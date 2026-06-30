@@ -699,14 +699,14 @@ else:
                 for ticket in TICKET_COLUMNS:
                     template_data[ticket] = [0] * len(all_bags)
                     
-                st.session_state.wide_adjustment_df = pd.DataFrame(template_data)
+                df_template_data = pd.DataFrame(template_data)
 
             st.markdown("#### Input Corrections")
             st.caption("Double-click any cell to input adjustments directly into the matrix.")
 
             # 3. Render the interactive wide table matrix
             edited_matrix = st.data_editor(
-                st.session_state.wide_adjustment_df,
+                df_template_data,
                 disabled=["Bag Number"], # Lock down only the bag numbers so they remain as clean row labels
                 hide_index=True,
                 use_container_width=True,
