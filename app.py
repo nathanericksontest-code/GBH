@@ -793,6 +793,8 @@ else:
             ######## AUDITOR ADJUSTMENTS ###########
 
             with st.expander("Auditor Adjustments"):
+                with st.expander("Re-count"):
+                    run_zapier(df_excel_counted.copy(), "Counted")
                 with st.expander("Extras"):
                     run_zapier(df_excel_extras.copy(), "Extras")
                 with st.expander("Edits"):
