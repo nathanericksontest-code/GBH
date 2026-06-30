@@ -492,8 +492,7 @@ else:
                 m2.metric("Total In Status", f"{status_count:,}")
                 m3.metric("Total Filtered", f"{filtered_count:,}")
                 st.markdown("---")
-    else:
-        st.info("Waiting for 'live_tickets.json' to populate...")
+
 
     # =========================================================================
     # RENDER SELECTED PAGE SWITCH BLOCKS
