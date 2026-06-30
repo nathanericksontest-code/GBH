@@ -123,7 +123,7 @@ def run_zapier(df_zap,destination):
     st.markdown("---")
     st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
     
-    with st.form("zapier_counter_form"):
+    with st.form("zapier_counter_form", key=f"{destination}_form"):
         c_meta1, = st.columns(1)
         with c_meta1:
             notes = st.text_input("Notes", value=row_data.get("Notes",""))
@@ -782,10 +782,10 @@ else:
 
             ######## AUDITOR ADJUSTMENTS ###########
 
-            with st.expander("### Auditor Adjustments"):
-                with st.expander("#### Extras"):
+            with st.expander("Auditor Adjustments"):
+                with st.expander("Extras"):
                     run_zapier(df_excel_extras.copy(), "Extras")
-                with st.expander("#### Edits"):
+                with st.expander("Edits"):
                     run_zapier(df_excel_audit.copy(), "Auditor")
 
             #all_bags = sorted(df_excel_counted["Bag Number"].unique().tolist())
