@@ -412,9 +412,11 @@ else:
         df_raw["Check-in by"] = df_raw["Check-in by"].fillna("Not Checked In")
         
         df_raw["Broad Category Group"] = df_raw["Ticket name"].apply(categorized_label)
-
-        df_raw["Cash"] = np.where(df_raw["Payment source"] == "Cash payment", df_raw["Price"], 0)
         
+        print(df_raw["Payment source"])
+        df_raw["Cash"] = np.where(df_raw["Payment source"] == "Cash payment", df_raw["Price"], 0)
+        st.markdown(f"total {df_raw["Cash"].sum()}")
+
         # Global variables required across analytical screens
         start_filter, end_filter = datetime.datetime.now(), datetime.datetime.now()
         filter_mode = "Broad Category Groups (Clean Summary)"
