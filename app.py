@@ -271,6 +271,8 @@ def categorized_label(name):
         return "Weekend"
     elif "upgrade" in name_lower:
         return "Upgrades"
+    elif "first flush" in name_lower:
+        return "First Flush"
     else:
         print("Unknown ticket type")
         return "Unknown"
@@ -1078,23 +1080,17 @@ else:
                             shift_end_str = str(row.get("Shift End", "")).strip()
                             
                             # Find calendar date boundaries
-                            if day_assigned_str in DAY_TO_DATE_MAPPING:
-                                target_calendar_date = pd.to_datetime(DAY_TO_DATE_MAPPING[day_assigned_str]).date()
-                            else:
-                                target_calendar_date = datetime.date(2025, 7, 5)
+                            target_calendar_date = pd.to_datetime(df_excel_registry["Start Date"]).date()
                                 
-                            try:
-                                parsed_start_time = pd.to_datetime(shift_start_str, format="%H:%M", errors='coerce').time()
-                                if pd.isna(parsed_start_time): parsed_start_time = datetime.time(0, 0)
-                            except:
-                                parsed_start_time = datetime.time(0, 0)
+
+                            parsed_start_time = pd.to_datetime(shift_start_str, format="%H:%M", errors='coerce').time()
+                            if pd.isna(parsed_start_time): parsed_start_time = datetime.time(0, 0)
+
                                 
-                            try:
-                                parsed_end_time = pd.to_datetime(shift_end_str, format="%H:%M", errors='coerce').time()
-                                if pd.isna(parsed_end_time): parsed_end_time = datetime.time(23, 59)
-                            except:
-                                parsed_end_time = datetime.time(23, 59)
-                                
+
+                            parsed_end_time = pd.to_datetime(shift_end_str, format="%H:%M", errors='coerce').time()
+                            if pd.isna(parsed_end_time): parsed_end_time = datetime.time(23, 59)
+
                             bag_shift_datetime_start = datetime.datetime.combine(target_calendar_date, parsed_start_time)
                             bag_shift_datetime_end = datetime.datetime.combine(target_calendar_date, parsed_end_time)
                             if bag_shift_datetime_end < bag_shift_datetime_start:
