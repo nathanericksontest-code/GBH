@@ -616,8 +616,6 @@ else:
                 st.warning("No live transaction ledger data found to process.")
             else:
                 filtered_df = filtered_df.copy()
-                st.markdown(f"Total Cash: ${df_raw['Cash'].sum():,.2f}")
-                st.markdown(f"Filtered Cash: ${filtered_df['Cash'].sum():,.2f}")
                 filt_agents = sorted(filtered_df["Check-in by"].unique().tolist())
                 df_excel_registry = df_excel_registry[df_excel_registry["Name"].isin(filt_agents)]
 
@@ -773,7 +771,10 @@ else:
                             # Exact column match fix applied here too
                             for ticket_type in ticket_cols:
                                 if not scans_in_window.empty:
-                                    matched_sum = (scans_in_window["Broad Category Group"].str.lower().str.strip() == ticket_type.lower().strip()).sum()
+                                    if ticket_type == "Cash":
+                                        matched_sum = (scans_in_window["Cash"]).sum()
+                                    else:
+                                        matched_sum = (scans_in_window["Broad Category Group"].str.lower().str.strip() == ticket_type.lower().strip()).sum()
                                 else:
                                     matched_sum = 0
                                 summary_entry[ticket_type] = matched_sum
