@@ -414,6 +414,7 @@ else:
         df_raw["Broad Category Group"] = df_raw["Ticket name"].apply(categorized_label)
         
         # Change price string
+        df_raw["Price_num"] = df_raw["Price"].copy()
         df_raw["Price_num"] = (df_raw["Price"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False).str.strip())
         df_raw["Price_num"] = pd.to_numeric(df_raw["Price_num"], errors="coerce").fillna(1)
 
@@ -525,7 +526,7 @@ else:
                 else:
                     filtered_df = filtered_df.sort_values(by=sort_choice, ascending=is_ascending)
                     
-                display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by","Refunded by","Refund date","Payment source","Payout amount","Price","Cash"]
+                display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by","Refunded by","Refund date","Payment source","Payout amount","Price","Cash","Price_num"]
                 available_display_cols = [c for c in display_cols if c in filtered_df.columns]
                 st.dataframe(filtered_df[available_display_cols], width='stretch', hide_index=True)
                 
