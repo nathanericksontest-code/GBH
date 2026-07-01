@@ -126,7 +126,7 @@ def run_zapier(df_zap,df_prepack,destination):
 
     bag_label = "Bag Number" if "Bag Number" in df_zap.columns else df_zap.columns[0]
     
-    st.markdown("#### 🔍 Step 1: Select Record to Modify")
+    #st.markdown("#### 🔍 Step 1: Select Record to Modify")
 
     # Get clean options list
     all_bags_list = sorted(df_zap[bag_label].dropna().unique().tolist())
@@ -162,7 +162,7 @@ def run_zapier(df_zap,df_prepack,destination):
             )
 
         # 2. Tightened transition directly into Step 2 (Removed the heavy st.markdown("---") rule line)
-        st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
+        #st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
         # st.markdown("#### 🔍 Step 1: Select Record to Modify")
         # all_bags_list = sorted(df_zap[bag_label].dropna().unique().tolist())
         # selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list,key=f"{destination}_selectbox")
@@ -181,7 +181,7 @@ def run_zapier(df_zap,df_prepack,destination):
             with c_meta1:
                 notes = st.text_input("Notes", value=row_data.get("Notes",""))
             
-            st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
+            #st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
             
                 # 1. Split columns into Lot items and General items
             lot_cols = [c for c in TICKET_COLUMNS if "lot" in c.lower()or "parking" in c.lower()]
@@ -209,13 +209,13 @@ def run_zapier(df_zap,df_prepack,destination):
                             )
 
             # 2. Render General Tickets First (3 or 4 across depending on screen space)
-            st.markdown("### 🎟️ General Passes & Cash")
+            #st.markdown("### 🎟️ General Passes & Cash")
             render_ticket_chunk(other_cols, chunks_of=3)
 
             st.markdown("---") # Visual separator
 
             # 3. Render Parking Lots Grouped Together
-            st.markdown("### 🚗 Gate & Lot Parking Assignment")
+            #st.markdown("### 🚗 Gate & Lot Parking Assignment")
             render_ticket_chunk(lot_cols, chunks_of=3)
 
             # 4. Form Submission
