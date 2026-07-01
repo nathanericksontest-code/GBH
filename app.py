@@ -257,13 +257,13 @@ def categorized_label(name):
         return "Red Lot"
     elif "vendor green lot" in name_lower:
         return "Vendor Parking"
-    elif "multi color" in name_lower:
+    elif "multicolor" in name_lower:
         return "Multiguest Parking"
     elif "white" in name_lower:
         return "Guest Parking"
     elif "all access" in name_lower or "all-access" in name_lower:
         return "All-Access"
-    elif "saturday" in name_lower:
+    elif "saturday only" in name_lower:
         return "Saturday"
     elif "sunday night" in name_lower:
         return "Sunday"
