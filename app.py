@@ -527,7 +527,7 @@ else:
                 else:
                     filtered_df = filtered_df.sort_values(by=sort_choice, ascending=is_ascending)
                     
-                display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by","Refunded by","Refund date"]
+                display_cols = ["ID", "Status", "Attendee first name", "Attendee last name", "Ticket name", "Broad Category Group", "Check-in time", "Check-in by","Refunded by","Refund date","Payment source","Price","Cash"]
                 available_display_cols = [c for c in display_cols if c in filtered_df.columns]
                 st.dataframe(filtered_df[available_display_cols], width='stretch', hide_index=True)
                 
