@@ -187,75 +187,75 @@ def run_zapier(df_zap,df_prepack,destination):
             st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
             
             # 1. Split columns into Lot items and General items
-        lot_cols = [c for c in ticket_cols if "lot" in c.lower()]
-        other_cols = [c for c in ticket_cols if "lot" not in c.lower()]
+            lot_cols = [c for c in ticket_cols if "lot" in c.lower()]
+            other_cols = [c for c in ticket_cols if "lot" not in c.lower()]
 
-        ticket_inputs = {}
-        # 2. Render General Tickets First (3 or 4 across depending on screen space)
-        st.markdown("### 🎟️ General Passes & Cash")
-        t_cols_chunks = [other_cols[x:x+3] for x in range(0, len(other_cols), 3)]
-        for chunk in t_cols_chunks:
-            form_cols = st.columns(len(chunk))
-            for idx, t_col in enumerate(chunk):
-                with form_cols[idx]:
-                    try: 
-                        current_qty_val = int(row_data.get(t_col, 0))
-                    except: 
-                        current_qty_val = 0
-                    ticket_inputs[t_col] = st.number_input(
-                        f"{t_col}:", 
-                        min_value=min_val, 
-                        value=current_qty_val, 
-                        step=step_size,
-                        key=f"input_{t_col}" # Added safety key
-                )
-        st.markdown("---") # Visual separator
+            ticket_inputs = {}
+            # 2. Render General Tickets First (3 or 4 across depending on screen space)
+            st.markdown("### 🎟️ General Passes & Cash")
+            t_cols_chunks = [other_cols[x:x+3] for x in range(0, len(other_cols), 3)]
+            for chunk in t_cols_chunks:
+                form_cols = st.columns(len(chunk))
+                for idx, t_col in enumerate(chunk):
+                    with form_cols[idx]:
+                        try: 
+                            current_qty_val = int(row_data.get(t_col, 0))
+                        except: 
+                            current_qty_val = 0
+                        ticket_inputs[t_col] = st.number_input(
+                            f"{t_col}:", 
+                            min_value=min_val, 
+                            value=current_qty_val, 
+                            step=step_size,
+                            key=f"input_{t_col}" # Added safety key
+                    )
+            st.markdown("---") # Visual separator
 
-        # 3. Render Parking Lots Grouped Together
-        st.markdown("### 🚗 Gate & Lot Parking Assignment")
-        t_cols_chunks = [lot_cols[x:x+3] for x in range(0, len(lot_cols), 3)]
-        for chunk in t_cols_chunks:
-            form_cols = st.columns(len(chunk))
-            for idx, t_col in enumerate(chunk):
-                with form_cols[idx]:
-                    try: 
-                        current_qty_val = int(row_data.get(t_col, 0))
-                    except: 
-                        current_qty_val = 0
-                    ticket_inputs[t_col] = st.number_input(
-                        f"{t_col}:", 
-                        min_value=min_val, 
-                        value=current_qty_val, 
-                        step=step_size,
-                        key=f"input_{t_col}" # Added safety key
-                )
+            # 3. Render Parking Lots Grouped Together
+            st.markdown("### 🚗 Gate & Lot Parking Assignment")
+            t_cols_chunks = [lot_cols[x:x+3] for x in range(0, len(lot_cols), 3)]
+            for chunk in t_cols_chunks:
+                form_cols = st.columns(len(chunk))
+                for idx, t_col in enumerate(chunk):
+                    with form_cols[idx]:
+                        try: 
+                            current_qty_val = int(row_data.get(t_col, 0))
+                        except: 
+                            current_qty_val = 0
+                        ticket_inputs[t_col] = st.number_input(
+                            f"{t_col}:", 
+                            min_value=min_val, 
+                            value=current_qty_val, 
+                            step=step_size,
+                            key=f"input_{t_col}" # Added safety key
+                    )
 
-        # 4. Form Submission
-        submit_changes = st.form_submit_button("🚀 Send Updates to Database", key=f"{destination}_submit_btn")
-        if submit_changes:
-            # Build payload payload explicitly so Zapier receives flat text key pairs
-            
+            # 4. Form Submission
+            submit_changes = st.form_submit_button("🚀 Send Updates to Database", key=f"{destination}_submit_btn")
+            if submit_changes:
+                # Build payload payload explicitly so Zapier receives flat text key pairs
+                
 
-            payload = {
-                "bag_number": str(selected_bag_to_edit),
-                "counter": counter_name,
-                "notes": notes,
-                "worksheet": sheet_ID
-            }
-            # Merge dynamic numbers directly into payload root
-            for ticket_name, qty in ticket_inputs.items():
-                payload[f"ticket_{ticket_name}"] = qty
+                payload = {
+                    "bag_number": str(selected_bag_to_edit),
+                    "counter": counter_name,
+                    "notes": notes,
+                    "worksheet": sheet_ID
+                }
+                # Merge dynamic numbers directly into payload root
+                for ticket_name, qty in ticket_inputs.items():
+                    payload[f"ticket_{ticket_name}"] = qty
 
-            with st.spinner("Firing webhook to Database..."):
-                try:
-                    response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
-                    
-                    if response.status_code in [200, 201]:
-                        st.success("🎉 Sent to Database! Enter next bag.")
-                    else:
-                        st.error(f"Zapier rejected request with status code: {response.status_code}")
-                except Exception as e:
-                    st.error(f"Failed to connect to Zapier webhook: {e}")
+                with st.spinner("Firing webhook to Database..."):
+                    try:
+                        response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
+                        
+                        if response.status_code in [200, 201]:
+                            st.success("🎉 Sent to Database! Enter next bag.")
+                        else:
+                            st.error(f"Zapier rejected request with status code: {response.status_code}")
+                    except Exception as e:
+                        st.error(f"Failed to connect to Zapier webhook: {e}")
     else:
         st.warning("No selected bags, likely no checkins yet")
 
