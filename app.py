@@ -108,6 +108,11 @@ def load_evt_data(df):
         df["Check-in Day Name"] = ""
     return df
 
+
+# Helper function to render a list of columns in chunks of 3 or 4
+def render_ticket_chunk(columns_list, chunks_of=3):
+    
+
 def run_zapier(df_zap,df_prepack,destination):
 
     if destination == "Counted":
@@ -188,35 +193,44 @@ def run_zapier(df_zap,df_prepack,destination):
         other_cols = [c for c in ticket_cols if "lot" not in c.lower()]
 
         ticket_inputs = {}
-
-        # Helper function to render a list of columns in chunks of 3 or 4
-        def render_ticket_chunk(columns_list, chunks_of=3):
-            t_cols_chunks = [columns_list[x:x+chunks_of] for x in range(0, len(columns_list), chunks_of)]
-            for chunk in t_cols_chunks:
-                form_cols = st.columns(len(chunk))
-                for idx, t_col in enumerate(chunk):
-                    with form_cols[idx]:
-                        try: 
-                            current_qty_val = int(row_data.get(t_col, 0))
-                        except: 
-                            current_qty_val = 0
-                        ticket_inputs[t_col] = st.number_input(
-                            f"{t_col}:", 
-                            min_value=min_val, 
-                            value=current_qty_val, 
-                            step=step_size,
-                            key=f"input_{t_col}" # Added safety key
-                        )
-
         # 2. Render General Tickets First (3 or 4 across depending on screen space)
         st.markdown("### 🎟️ General Passes & Cash")
-        render_ticket_chunk(other_cols, chunks_of=3)
-
+        t_cols_chunks = [other_cols[x:x+3] for x in range(0, len(other_cols), 3)]
+        for chunk in t_cols_chunks:
+            form_cols = st.columns(len(chunk))
+            for idx, t_col in enumerate(chunk):
+                with form_cols[idx]:
+                    try: 
+                        current_qty_val = int(row_data.get(t_col, 0))
+                    except: 
+                        current_qty_val = 0
+                    ticket_inputs[t_col] = st.number_input(
+                        f"{t_col}:", 
+                        min_value=min_val, 
+                        value=current_qty_val, 
+                        step=step_size,
+                        key=f"input_{t_col}" # Added safety key
+                )
         st.markdown("---") # Visual separator
 
         # 3. Render Parking Lots Grouped Together
         st.markdown("### 🚗 Gate & Lot Parking Assignment")
-        render_ticket_chunk(lot_cols, chunks_of=3)
+        t_cols_chunks = [lot_cols[x:x+3] for x in range(0, len(lot_cols), 3)]
+        for chunk in t_cols_chunks:
+            form_cols = st.columns(len(chunk))
+            for idx, t_col in enumerate(chunk):
+                with form_cols[idx]:
+                    try: 
+                        current_qty_val = int(row_data.get(t_col, 0))
+                    except: 
+                        current_qty_val = 0
+                    ticket_inputs[t_col] = st.number_input(
+                        f"{t_col}:", 
+                        min_value=min_val, 
+                        value=current_qty_val, 
+                        step=step_size,
+                        key=f"input_{t_col}" # Added safety key
+                )
 
         # 4. Form Submission
         submit_changes = st.form_submit_button("🚀 Send Updates to Database", key=f"{destination}_submit_btn")
