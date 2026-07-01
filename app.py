@@ -109,9 +109,7 @@ def load_evt_data(df):
     return df
 
 
-# Helper function to render a list of columns in chunks of 3 or 4
-def render_ticket_chunk(columns_list, chunks_of=3):
-    
+
 
 def run_zapier(df_zap,df_prepack,destination):
 
