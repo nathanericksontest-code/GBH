@@ -85,13 +85,13 @@ async def automated_data_extraction():
         ('type', 'uploaded file'),
         ('export-type', 'attendee-ticket'),
         ('selections[export-type]', 'attendee-ticket'),
-        ('selections[ticket]', '33312,33314,38046,38047,33315,38344,29623,36873,33309,33310,33311,33308,29591,36875,29592,33304,38503,36874,29593,36876,33302,33305,33319,33318,33303,33306,33316,33317,36878,36879,36880,33320,36884,36885,36882,33301,38346,29588,29587,30179,29589,33288,33307,36886,36883'),
+        ('selections[ticket]', '57781,57598,57599,59264,45874,57600,57605,57606,57608,57601,46060,57609,45876,57611,57610,45877,57612,52937,57613,46029,57621,52938,57622,57624,57625,57626,57628,57158,57161,57631,57157,57632,50023,52939,39062,57629,39060,50022,45873,57633,52936,50077,50080,50078,50076,50079'),
         ('export-status', 'all'),
         ('selections[export-status]', 'all'),
         ('date-range', 'all'),
         ('selections[date-range]', 'all'),
-        ('export[start_date]', 'Jan 1, 2026'),
-        ('export[end_date]', 'Jun 21, 2026'),
+        ('export[start_date]', 'Jan 1, 2025'),
+        ('export[end_date]', 'Aug 21, 2026'),
         ('toggle_ticket_group', ''),
         ('export[merge_questions]', '1'),
         ('export[merge_deliverables]', '1'),
@@ -173,3 +173,6 @@ async def automated_data_extraction():
 if __name__ == "__main__":
     # 5. Execute the async loop
     file_path = asyncio.run(automated_data_extraction())
+
+
+
