@@ -220,30 +220,31 @@ def run_zapier(df_zap,df_prepack,destination):
 
             # 4. Form Submission
             submit_changes = st.form_submit_button("🚀 Send Updates to Database", key=f"{destination}_submit_btn")
-        if submit_changes:
-            # Build payload payload explicitly so Zapier receives flat text key pairs
             
+            if submit_changes:
+                # Build payload payload explicitly so Zapier receives flat text key pairs
+                
 
-            payload = {
-                "bag_number": str(selected_bag_to_edit),
-                "counter": counter_name,
-                "notes": notes,
-                "worksheet": sheet_ID
-            }
-            # Merge dynamic numbers directly into payload root
-            for ticket_name, qty in ticket_inputs.items():
-                payload[f"ticket_{ticket_name}"] = qty
+                payload = {
+                    "bag_number": str(selected_bag_to_edit),
+                    "counter": counter_name,
+                    "notes": notes,
+                    "worksheet": sheet_ID
+                }
+                # Merge dynamic numbers directly into payload root
+                for ticket_name, qty in ticket_inputs.items():
+                    payload[f"ticket_{ticket_name}"] = qty
 
-            with st.spinner("Firing webhook to Database..."):
-                try:
-                    response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
-                    
-                    if response.status_code in [200, 201]:
-                        st.success("🎉 Sent to Database! Enter next bag.")
-                    else:
-                        st.error(f"Zapier rejected request with status code: {response.status_code}")
-                except Exception as e:
-                    st.error(f"Failed to connect to Zapier webhook: {e}")
+                with st.spinner("Firing webhook to Database..."):
+                    try:
+                        response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
+                        
+                        if response.status_code in [200, 201]:
+                            st.success("🎉 Sent to Database! Enter next bag.")
+                        else:
+                            st.error(f"Zapier rejected request with status code: {response.status_code}")
+                    except Exception as e:
+                        st.error(f"Failed to connect to Zapier webhook: {e}")
     else:
         st.warning("No selected bags, likely no checkins yet")
 
