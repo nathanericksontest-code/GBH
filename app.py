@@ -245,6 +245,8 @@ def categorized_label(name):
         return "Meals"
     elif "weekend" in name_lower:
         return "Weekend"
+    elif "vendor" in name_lower and "sticker" in name_lower:
+        return "Vendor Parking"
     elif "green lot" in name_lower:
         return "Green Lot"
     elif "blue lot" in name_lower:
@@ -255,8 +257,6 @@ def categorized_label(name):
         return "Orange Lot"
     elif "red lot" in name_lower:
         return "Red Lot"
-    elif "vendor" in name_lower and "sticker" in name_lower:
-        return "Vendor Parking"
     elif "multicolor" in name_lower:
         return "Multiguest Parking"
     elif "white" in name_lower:
