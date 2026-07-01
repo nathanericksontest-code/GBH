@@ -101,7 +101,7 @@ def load_evt_data(df):
     # df.columns = df.columns.str.strip()
     
     if "Check-in time" in df.columns:
-        df["Check-in time_parsed"] = pd.to_datetime(df["Check-in time"].str.strip(), format="%b %d, %Y %I:%M %p", errors="coerce")
+        df["Check-in time_parsed"] = pd.to_datetime(df["Check-in time"].astype(str).str.strip(), format="%b %d, %Y %I:%M %p", errors="coerce")
         df["Check-in Day Name"] = df["Check-in time_parsed"].dt.day_name().str.strip().str.lower()
     else:
         df["Check-in time_parsed"] = pd.NaT
