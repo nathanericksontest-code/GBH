@@ -413,9 +413,17 @@ else:
         
         df_raw["Broad Category Group"] = df_raw["Ticket name"].apply(categorized_label)
         
-        print(df_raw["Payment source"])
-        df_raw["Cash"] = np.where(df_raw["Payment source"] == "Cash payment", df_raw["Price"], 0)
-        st.markdown(f"total {df_raw["Cash"].sum()}")
+        df_raw["Price"] = pd.to_numeric(df_raw["Price"], errors="coerce").fillna(0)
+
+        # 3. Apply your cash payment mapping condition
+        df_raw["Cash"] = np.where(
+            df_raw["Payment source"] == "Cash payment", 
+            df_raw["Price"], 
+            0.0
+        )
+
+        # 4. Now this line will calculate perfectly without throwing a TypeError!
+        st.markdown(f"Total Cash: ${df_raw['Cash'].sum():,.2f}")    
 
         # Global variables required across analytical screens
         start_filter, end_filter = datetime.datetime.now(), datetime.datetime.now()
