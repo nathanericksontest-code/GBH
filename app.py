@@ -184,8 +184,8 @@ def run_zapier(df_zap,df_prepack,destination):
             #st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
             
                 # 1. Split columns into Lot items and General items
-            lot_cols = [c for c in TICKET_COLUMNS if "lot" in c.lower()or "parking" in c.lower()]
-            other_cols = [c for c in TICKET_COLUMNS if "lot" not in c.lower() and "parking" not in c.lower()]
+            lot_cols = [c for c in TICKET_COLUMNS if "lot" in c.lower()or "parking" in c.lower() or "cash" in c.lower()]
+            other_cols = [c for c in TICKET_COLUMNS if "lot" not in c.lower() and "parking" not in c.lower() and "cash" not in c.lower()]
 
             ticket_inputs = {}
 
