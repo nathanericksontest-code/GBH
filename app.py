@@ -265,10 +265,10 @@ def categorized_label(name):
         return "All-Access"
     elif "saturday" in name_lower:
         return "Saturday"
-    elif "sunday camping" in name_lower:
-        return "Sunday Camping"
-    elif "sunday" in name_lower:
+    elif "sunday night" in name_lower:
         return "Sunday"
+    elif "sunday" in name_lower:
+        return "Weekend"
     elif "upgrade" in name_lower:
         return "Upgrades"
     else:
