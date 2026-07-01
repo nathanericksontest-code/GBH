@@ -414,9 +414,8 @@ else:
         df_raw["Broad Category Group"] = df_raw["Ticket name"].apply(categorized_label)
         
         # Change price string
-        if df_raw["Price"].dtype == "object":
-            df_raw["Price"] = (df_raw["Price"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False).str.strip())
-        df_raw["Price"] = pd.to_numeric(df_raw["Price"], errors="coerce").fillna(0)
+        df_raw["Price"] = (df_raw["Price"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False).str.strip())
+        df_raw["Price"] = pd.to_numeric(df_raw["Price"], errors="coerce").fillna(1)
 
         # 3. Apply your cash payment mapping condition
         df_raw["Cash"] = np.where(df_raw["Payment source"] == "Cash payment", df_raw["Price"], 0.0)
