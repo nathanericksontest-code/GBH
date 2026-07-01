@@ -255,7 +255,7 @@ def categorized_label(name):
         return "Orange Lot"
     elif "red lot" in name_lower:
         return "Red Lot"
-    elif "vendor green lot" in name_lower:
+    elif "vendor" in name_lower and "parking" in name_lower:
         return "Vendor Parking"
     elif "multicolor" in name_lower:
         return "Multiguest Parking"
