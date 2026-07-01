@@ -109,7 +109,7 @@ def load_evt_data(df):
     return df
 
 def run_zapier(df_zap,df_prepack,destination):
-    
+
     if destination == "Counted":
         sheet_ID = 1555218451
         min_val = 0
@@ -141,88 +141,90 @@ def run_zapier(df_zap,df_prepack,destination):
             key=f"{destination}_selectbox"
         )
 
-    # Fetch target row data safely
-    row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
-    try:
-        prepack_row_data = df_prepack[df_prepack[bag_label] == selected_bag_to_edit].iloc[0]
-        volunteer_name = prepack_row_data.get("Name", "none")
-    except:
-        volunteer_name = "Not assigned"
+    if selected_bag_to_edit is not None:
+        row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
+        try:
+            prepack_row_data = df_prepack[df_prepack[bag_label] == selected_bag_to_edit].iloc[0]
+            volunteer_name = prepack_row_data.get("Name", "none")
+        except:
+            volunteer_name = "Not assigned"
 
-    with col2:
-        # Use standard markdown instead of subheader to drop the large padding blocks
-        st.markdown(f"**Volunteer Name:**\n### {volunteer_name}")
-        st.caption("📝 Write in notes if mismatch occurs")
+        with col2:
+            # Use standard markdown instead of subheader to drop the large padding blocks
+            st.markdown(f"**Volunteer Name:**\n### {volunteer_name}")
+            st.caption("📝 Write in notes if mismatch occurs")
 
-    with col3:
-        counter_name = st.text_input(
-            "Counter Staff Assignment:", 
-            value="Please fill in", 
-            key=f"{destination}_counter"
-        )
+        with col3:
+            counter_name = st.text_input(
+                "Counter Staff Assignment:", 
+                value="Please fill in", 
+                key=f"{destination}_counter"
+            )
 
-    # 2. Tightened transition directly into Step 2 (Removed the heavy st.markdown("---") rule line)
-    st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
-    # st.markdown("#### 🔍 Step 1: Select Record to Modify")
-    # all_bags_list = sorted(df_zap[bag_label].dropna().unique().tolist())
-    # selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list,key=f"{destination}_selectbox")
-    #     # Fetch target row data
-    # row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
-    
-    # st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
-    # st.caption("Write in notes if does not match bag")
-    # counter_name = st.text_input("Counter:", value=str("Please fill in"), key=f"{destination}_counter")
-
-    # st.markdown("---")
-    # st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
-    
-    with st.form(f"{destination}_form"):
-        c_meta1, = st.columns(1)
-        with c_meta1:
-            notes = st.text_input("Notes", value=row_data.get("Notes",""))
+        # 2. Tightened transition directly into Step 2 (Removed the heavy st.markdown("---") rule line)
+        st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
+        # st.markdown("#### 🔍 Step 1: Select Record to Modify")
+        # all_bags_list = sorted(df_zap[bag_label].dropna().unique().tolist())
+        # selected_bag_to_edit = st.selectbox("Choose a Bag Number / ID:", options=all_bags_list,key=f"{destination}_selectbox")
+        #     # Fetch target row data
+        # row_data = df_zap[df_zap[bag_label] == selected_bag_to_edit].iloc[0]
         
-        st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
-        
-        meta_cols = [bag_label, "Name", "Notes","Date","Day","Shift Start","Shift End","Gate"]
-        meta_cols_existing = [c for c in meta_cols if c in df_excel_counted.columns]
-        ticket_cols = TICKET_COLUMNS
+        # st.subheader(f"Volunteer Name: {row_data.get("Name","none")}")
+        # st.caption("Write in notes if does not match bag")
+        # counter_name = st.text_input("Counter:", value=str("Please fill in"), key=f"{destination}_counter")
 
-        ticket_inputs = {}
-        t_cols_chunks = [ticket_cols[x:x+4] for x in range(0, len(ticket_cols), 4)]
-        for chunk in t_cols_chunks:
-            form_cols = st.columns(len(chunk))
-            for idx, t_col in enumerate(chunk):
-                with form_cols[idx]:
-                    try: current_qty_val = int(row_data.get(t_col, 0))
-                    except: current_qty_val = 0
-                    ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=min_val, value=current_qty_val, step=step_size)
+        # st.markdown("---")
+        # st.markdown(f"#### 🛠️ Step 2: Update Data Fields")
         
-        submit_changes = st.form_submit_button("🚀 Send Updates to Database", key=f"{destination}_submit_btn")
-    
-    if submit_changes:
-        # Build payload payload explicitly so Zapier receives flat text key pairs
+        with st.form(f"{destination}_form"):
+            c_meta1, = st.columns(1)
+            with c_meta1:
+                notes = st.text_input("Notes", value=row_data.get("Notes",""))
+            
+            st.markdown("##### 🎟️ Modify Ticket Quantities Allocations")
+            
+            meta_cols = [bag_label, "Name", "Notes","Date","Day","Shift Start","Shift End","Gate"]
+            meta_cols_existing = [c for c in meta_cols if c in df_excel_counted.columns]
+            ticket_cols = TICKET_COLUMNS
+
+            ticket_inputs = {}
+            t_cols_chunks = [ticket_cols[x:x+4] for x in range(0, len(ticket_cols), 4)]
+            for chunk in t_cols_chunks:
+                form_cols = st.columns(len(chunk))
+                for idx, t_col in enumerate(chunk):
+                    with form_cols[idx]:
+                        try: current_qty_val = int(row_data.get(t_col, 0))
+                        except: current_qty_val = 0
+                        ticket_inputs[t_col] = st.number_input(f"{t_col}:", min_value=min_val, value=current_qty_val, step=step_size)
+            
+            submit_changes = st.form_submit_button("🚀 Send Updates to Database", key=f"{destination}_submit_btn")
         
+        if submit_changes:
+            # Build payload payload explicitly so Zapier receives flat text key pairs
+            
 
-        payload = {
-            "bag_number": str(selected_bag_to_edit),
-            "counter": counter_name,
-            "notes": notes,
-            "worksheet": sheet_ID
-        }
-        # Merge dynamic numbers directly into payload root
-        for ticket_name, qty in ticket_inputs.items():
-            payload[f"ticket_{ticket_name}"] = qty
+            payload = {
+                "bag_number": str(selected_bag_to_edit),
+                "counter": counter_name,
+                "notes": notes,
+                "worksheet": sheet_ID
+            }
+            # Merge dynamic numbers directly into payload root
+            for ticket_name, qty in ticket_inputs.items():
+                payload[f"ticket_{ticket_name}"] = qty
 
-        with st.spinner("Firing webhook to Database..."):
-            try:
-                response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
-                
-                if response.status_code in [200, 201]:
-                    st.success("🎉 Sent to Database! Enter next bag.")
-                else:
-                    st.error(f"Zapier rejected request with status code: {response.status_code}")
-            except Exception as e:
-                st.error(f"Failed to connect to Zapier webhook: {e}")
+            with st.spinner("Firing webhook to Database..."):
+                try:
+                    response = requests.post(ZAPIER_COUNTER_HOOK_URL, json=payload)
+                    
+                    if response.status_code in [200, 201]:
+                        st.success("🎉 Sent to Database! Enter next bag.")
+                    else:
+                        st.error(f"Zapier rejected request with status code: {response.status_code}")
+                except Exception as e:
+                    st.error(f"Failed to connect to Zapier webhook: {e}")
+    else:
+        st.warning("No selected bags, likely no checkins yet")
 
 
 @st.cache_data(ttl=10)
