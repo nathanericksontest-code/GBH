@@ -114,14 +114,20 @@ def run_zapier(df_zap,df_prepack,destination):
         sheet_ID = 1555218451
         min_val = 0
         step_size = 1
+        other_cols = [c for c in TICKET_COLUMNS if "lot" not in c.lower() and "parking" not in c.lower() and "cash" not in c.lower() and "first" not in c.lower() and "upgrades" not in c.lower() and "meals" not in c.lower()]
+
     elif destination == "Extras":
         sheet_ID = 807176535
         min_val = -100
         step_size = 10
+        other_cols = [c for c in TICKET_COLUMNS if "lot" not in c.lower() and "parking" not in c.lower() and "cash" not in c.lower() and "first" not in c.lower() and "upgrades" not in c.lower() and "meals" not in c.lower()]
+
     elif destination == "Auditor":
         sheet_ID = 1901971005
         min_val = -100
         step_size = 1
+        other_cols = [c for c in TICKET_COLUMNS if "lot" not in c.lower() and "parking" not in c.lower() and "cash" not in c.lower()]
+
 
 
     bag_label = "Bag Number" if "Bag Number" in df_zap.columns else df_zap.columns[0]
@@ -185,7 +191,7 @@ def run_zapier(df_zap,df_prepack,destination):
             
                 # 1. Split columns into Lot items and General items
             lot_cols = [c for c in TICKET_COLUMNS if "lot" in c.lower()or "parking" in c.lower() or "cash" in c.lower()]
-            other_cols = [c for c in TICKET_COLUMNS if "lot" not in c.lower() and "parking" not in c.lower() and "cash" not in c.lower()]
+
 
             ticket_inputs = {}
 
