@@ -569,7 +569,6 @@ else:
                     st.warning("Eventeny live transaction data ledger is currently unavailable.")
             
 
-
     elif page_selection == "📊 Check-In Analytics Chart":
             st.subheader("Check-In Velocity Timeline")
             
@@ -605,9 +604,6 @@ else:
                     st.plotly_chart(fig, width='stretch')
 
 
-
-
-
     #################################
     ######## Audit Page ###########
     #################################
@@ -620,6 +616,8 @@ else:
                 st.warning("No live transaction ledger data found to process.")
             else:
                 filtered_df = filtered_df.copy()
+                st.markdown(f"Total Cash: ${df_raw['Cash'].sum():,.2f}")
+                st.markdown(f"Filtered Cash: ${filtered_df['Cash'].sum():,.2f}")
                 filt_agents = sorted(filtered_df["Check-in by"].unique().tolist())
                 df_excel_registry = df_excel_registry[df_excel_registry["Name"].isin(filt_agents)]
 
