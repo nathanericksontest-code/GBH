@@ -964,7 +964,7 @@ else:
                 ######## Audit Chart ###########
                     #################################
                 st.write("Analytics View")
-                if not df_audit.empty:
+                if 'df_audit' in locals() and not df_audit.empty:
                     chart2_data = df_audit.copy()
                     if chart2_data.empty:
                         st.warning("No data matches the selected timeframe bounds or global filter criteria.")
