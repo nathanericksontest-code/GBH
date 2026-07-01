@@ -415,8 +415,8 @@ else:
         
         # Change price string
         df_raw["Price_num"] = df_raw["Price"].copy()
-        df_raw["Price_num"] = (df_raw["Price"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False).str.strip())
-        df_raw["Price_num"] = pd.to_numeric(df_raw["Price_num"], errors="coerce").fillna(1)
+        df_raw["Price_num"] = (df_raw["Price_num"].astype(str).str.replace("$", "", regex=False).str.replace(",", "", regex=False).str.strip())
+        df_raw["Price_num"] = pd.to_numeric(df_raw["Price_num"])
 
         # 3. Apply your cash payment mapping condition
         df_raw["Cash"] = np.where(df_raw["Payment source"] == "Cash payment", df_raw["Price_num"], 0.0)
