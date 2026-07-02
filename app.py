@@ -959,7 +959,7 @@ else:
                         ext_matrix = ext_matrix.reindex(all_bags, fill_value=0)
 
                         # 4. Perform math subtraction (Negative means missing)
-                        audit_matrix = cnt_matrix + evt_matrix - aud_matrix - pre_matrix - ext_matrix 
+                        audit_matrix = cnt_matrix + evt_matrix + aud_matrix - pre_matrix - ext_matrix 
                         
                         # 5. Format it back into a beautiful UI dataframe view
                         df_audit = audit_matrix.reset_index()
