@@ -649,6 +649,7 @@ else:
             else:
                 filtered_df = filtered_df.copy()
                 filt_agents = sorted(filtered_df["Check-in by"].unique().tolist())
+                filt_agents.append("EXTRAS")
                 df_excel_registry = df_excel_registry[df_excel_registry["Name"].isin(filt_agents)]
 
                 filt_bags = sorted(df_excel_registry["Bag Number"].unique().tolist())
