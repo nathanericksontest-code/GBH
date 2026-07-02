@@ -601,6 +601,7 @@ else:
                     st.warning("Eventeny live transaction data ledger is currently unavailable.")
             
 
+        # PAGE 2
     elif page_selection == "📊 Check-In Analytics Chart":
             st.subheader("Check-In Velocity Timeline")
             
@@ -610,7 +611,6 @@ else:
                 st.warning("No live transaction ledger data found to process.")
             else:
                 st.write("Analytics View")
-                # (...Keep original Page 2 Charts layout code intact...)
                 chart_data = filtered_df[filtered_df["Check-in time_parsed"].notna()].copy()
                 if chart_data.empty:
                     st.warning("No data matches the selected timeframe bounds or global filter criteria.")
@@ -681,8 +681,9 @@ else:
                     st.markdown('</div>', unsafe_allow_html=True)
 
                 df_excel_registry = df_excel_registry[df_excel_registry["Bag Number"].isin(selected_bags)]
-                df_excel_counted = df_excel_counted[df_excel_counted["Bag Number"].isin(selected_bags)]
-                
+                df_excel_counted_p3 = df_excel_counted.copy()
+                df_excel_counted_p3 = df_excel_counted_p3[df_excel_counted_p3["Bag Number"].isin(selected_bags)]
+
                 # How many tickets were found that could be attributed to a check in person?
                 bag_agents = sorted(df_excel_registry["Name"].unique().tolist())
                 df_lim_filtered = filtered_df[filtered_df["Check-in by"].isin(bag_agents)]
@@ -870,14 +871,14 @@ else:
                 ######## COUNTED ###########
                     #################################
                 st.markdown("### Counted")
-                st.dataframe(df_excel_counted, width='stretch', hide_index=True)
+                st.dataframe(df_excel_counted_p3, width='stretch', hide_index=True)
                 
 
                 ######## AUDITOR ADJUSTMENTS ###########
 
                 with st.expander("Auditor Adjustments"):
                     with st.expander("Re-count"):
-                        run_zapier(df_excel_counted.copy(),df_excel_registry.copy(), "Counted")
+                        run_zapier(df_excel_counted_p3.copy(),df_excel_registry.copy(), "Counted")
                     with st.expander("Extras"):
                         run_zapier(df_excel_extras.copy(), df_excel_registry.copy(),"Extras")
                     with st.expander("Edits"):
@@ -922,10 +923,10 @@ else:
                 st.markdown("###### Negative values indicate missing wristbands/stickers")
                 ticket_cols = TICKET_COLUMNS
                 # Ensure we have valid, matching datasets to perform math on
-                if not df_excel_registry.empty and not df_excel_counted.empty:
+                if not df_excel_registry.empty and not df_excel_counted_p3.empty:
                     # 1. Standardize Bag Number column handling string/numeric quirks
                     df_pre = df_excel_registry.copy()
-                    df_cnt = df_excel_counted.copy()
+                    df_cnt = df_excel_counted_p3.copy()
                     df_evt = df_bounded_output.copy()
                     df_ext = df_excel_extras.copy()
                     df_aud = df_excel_audit.copy()
