@@ -211,7 +211,7 @@ def run_zapier(df_zap,df_prepack,destination):
                                 min_value=min_val, 
                                 value=current_qty_val, 
                                 step=step_size,
-                                key=f"{destination}_{t_col}" # Added safety key
+                                key=f"{destination}_{t_col}_{selected_bag_to_edit}" # Added safety key
                             )
 
             # 2. Render General Tickets First (3 or 4 across depending on screen space)
